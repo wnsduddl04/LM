@@ -12,7 +12,7 @@ st.markdown("연맹원 명단과 나눔 현황을 실시간으로 확인하는 �
 def load_data():
     try:
         # 엑셀/구글시트를 CSV로 저장한 파일명
-        df = pd.read_csv("members.csv")
+        df = pd.read_csv("members.csv", encoding="cp949")
         return df
     except FileNotFoundError:
         return None
