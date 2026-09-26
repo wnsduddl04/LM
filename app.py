@@ -7,22 +7,22 @@ st.set_page_config(
 )
 
 
-# 1. 데이터 불러오기 (members_2.csv 파일로 강제 지정)
+# 1. 데이터 불러오기 (기존 파일명인 members.csv를 사용하되 인코딩 자동 처리)
 @st.cache_data
 def load_data():
   try:
-    df = pd.read_csv("members_2.csv", encoding="cp949")
+    df = pd.read_csv("members.csv", encoding="cp949")
   except:
     try:
-      df = pd.read_csv("members_2.csv", encoding="utf-8")
+      df = pd.read_csv("members.csv", encoding="utf-8")
     except:
-      df = pd.read_csv("members_2.csv", encoding="latin1")
+      df = pd.read_csv("members.csv", encoding="latin1")
   return df
 
 
 df = load_data()
 
-# 컬럼 이름 정의
+# 💡 CSV 파일의 실제 열 이름 설정
 COL_NAME = "이름"
 COL_CORPS = "군단명"
 COL_POWER = "전투력"
@@ -52,7 +52,7 @@ selected_corps = st.radio(
     "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
 )
 
-# 2. 활약도 선택 버튼 (members_2.csv의 활약도 항목들을 버튼으로 생성)
+# 2. 활약도 선택 버튼 (데이터에서 활약도 목록을 자동으로 읽어와 버튼 생성)
 status_list = ["전체 활약"]
 if COL_STATUS in df.columns:
   unique_status = df[COL_STATUS].dropna().unique().tolist()
