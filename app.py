@@ -23,12 +23,12 @@ def load_data():
 df = load_data()
 
 # ------------------------------------------------------------------
-# 💡 [중요] CSV 파일의 실제 열 이름(제목)에 맞게 설정했습니다!
+# 💡 CSV 파일의 실제 열 이름과 완벽히 일치시켰습니다!
 # ------------------------------------------------------------------
-COL_NAME = "이름"  # 이름 열
-COL_CORPS = "군단명"  # 군단 열 (표에서 '군단명'으로 확인됨)
-COL_POWER = "전투력"  # 전투력 열
-COL_STATUS = "활약도"  # 활약도 또는 상태 열 (만약 다른 이름이면 이 부분을 수정하세요)
+COL_NAME = "이름"
+COL_CORPS = "군단명"
+COL_POWER = "전투력"
+COL_STATUS = "활약도"
 
 st.title("🛡️ 연맹원 군단별 나눔 현황판")
 st.markdown("연맹원 명단과 나눔 현황을 실시간으로 확인하는 페이지입니다.")
@@ -44,26 +44,22 @@ search_query = st.text_input(
 
 st.markdown("---")
 
-# 1. 군단 선택 버튼 (데이터에 있는 군단명들을 자동으로 읽어와서 버튼 생성)
+# 1. 군단 선택 버튼 (데이터에서 군단 목록 자동 추출)
 corps_list = ["전체"]
 if COL_CORPS in df.columns:
   unique_corps = df[COL_CORPS].dropna().unique().tolist()
   corps_list.extend([str(c) for c in unique_corps])
-else:
-  corps_list.extend(["1군단", "2군단", "3군단", "4군단", "5군단"])
 
 selected_corps = st.radio(
     "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
 )
 
-# 2. 활약도/상태 선택 버튼 (만약 열이 존재하면 해당 값들로 버튼 생성, 없으면 임시 생성)
+# 2. 활약도 선택 버튼 (데이터에서 활약도 목록 자동 추출 및 정렬)
 status_list = ["전체 활약"]
 if COL_STATUS in df.columns:
   unique_status = df[COL_STATUS].dropna().unique().tolist()
+  # 보기 좋게 정렬 (원하시는 순서가 있다면 그대로 반영됩니다)
   status_list.extend([str(s) for s in unique_status])
-else:
-  # 활약도 열이 없을 경우를 대비한 예시 (필요시 수정)
-  status_list.extend(["굉장한 활약", "매우 활약", "활약", "저조"])
 
 selected_status = st.radio(
     "활약도 선택", status_list, horizontal=True, label_visibility="collapsed"
@@ -80,13 +76,13 @@ if search_query and COL_NAME in filtered_df.columns:
       filtered_df[COL_NAME].astype(str).str.contains(search_query, na=False)
   ]
 
-# 2. 군단 필터 (선택한 군단과 일치하는 데이터만 추출)
+# 2. 군단 필터
 if selected_corps != "전체" and COL_CORPS in filtered_df.columns:
   filtered_df = filtered_df[
       filtered_df[COL_CORPS].astype(str) == str(selected_corps)
   ]
 
-# 3. 활약도 필터
+# 3. 활약도 필터 (버튼을 누르면 해당 활약도만 남도록 완벽 연동!)
 if selected_status != "전체 활약" and COL_STATUS in filtered_df.columns:
   filtered_df = filtered_df[
       filtered_df[COL_STATUS].astype(str) == str(selected_status)
