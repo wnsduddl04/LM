@@ -28,7 +28,7 @@ COL_CORPS = "군단명"
 COL_POWER = "전투력"
 COL_STATUS = "활약도"
 
-# 제목 변경 적용
+# 제목 설정
 st.title("🛡️ LM 연맹원 전투력별 군단 나눔 현황판")
 st.markdown("연맹원 명단과 나눔 현황을 실시간으로 확인하는 페이지입니다.")
 
@@ -53,10 +53,14 @@ selected_corps = st.radio(
     "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
 )
 
-# 2. 활약도 선택 버튼
+# 2. 활약도 선택 버튼 ('상당한 활약'은 목록에서 제외)
 status_list = ["전체 활약"]
 if COL_STATUS in df.columns:
   unique_status = df[COL_STATUS].dropna().unique().tolist()
+  # '상당한 활약' 글자가 포함된 항목은 버튼 목록에서 제외합니다.
+  unique_status = [
+      s for s in unique_status if "상당한 활약" not in str(s)
+  ]
   status_list.extend([str(s) for s in unique_status if str(s).strip() != ""])
 else:
   status_list.extend(["★★★ 굉장", "★★ 매우", "★ 활약", "✕ 저조"])
