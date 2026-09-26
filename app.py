@@ -3,7 +3,9 @@ import streamlit as st
 
 # 페이지 설정
 st.set_page_config(
-    page_title="연맹원 군단별 나눔 현황판", page_icon="🛡️", layout="wide"
+    page_title="LM 연맹원 전투력별 군단 나눔 현황판",
+    page_icon="🛡️",
+    layout="wide",
 )
 
 
@@ -20,19 +22,14 @@ def load_data():
 
 df = load_data()
 
-# 💡 [디버깅용] 화면 상단에 현재 CSV 파일의 열(Column) 이름을 그대로 출력해 줍니다.
-# (나중에 확인하셨으면 이 줄은 지우셔도 됩니다)
-st.write("📂 **현재 읽어온 CSV 파일의 열 이름들:**", list(df.columns))
-
 # 컬럼 이름 정의
 COL_NAME = "이름"
 COL_CORPS = "군단명"
 COL_POWER = "전투력"
-COL_STATUS = (  # 혹시 파일에 '활약도' 대신 다른 이름으로 되어 있다면 여기서 수정 가능합니다
-    "활약도"
-)
+COL_STATUS = "활약도"
 
-st.title("🛡️ 연맹원 군단별 나눔 현황판")
+# 제목 변경 적용
+st.title("🛡️ LM 연맹원 전투력별 군단 나눔 현황판")
 st.markdown("연맹원 명단과 나눔 현황을 실시간으로 확인하는 페이지입니다.")
 
 # --- 전체 통계 ---
@@ -56,14 +53,12 @@ selected_corps = st.radio(
     "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
 )
 
-# 2. 활약도 선택 버튼 (강제로라도 데이터를 추출해 버튼을 만듭니다)
+# 2. 활약도 선택 버튼
 status_list = ["전체 활약"]
 if COL_STATUS in df.columns:
-  # 혹시 공백이나 빈 값이 섞여있어도 버튼이 나오도록 처리
   unique_status = df[COL_STATUS].dropna().unique().tolist()
   status_list.extend([str(s) for s in unique_status if str(s).strip() != ""])
 else:
-  # 만약 '활약도' 열을 아예 못 찾을 때를 대비한 안전 장치
   status_list.extend(["★★★ 굉장", "★★ 매우", "★ 활약", "✕ 저조"])
 
 selected_status = st.radio(
