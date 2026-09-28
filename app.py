@@ -201,7 +201,7 @@ if search_query and search_query.strip():
           str(row.get(COL_LEADER, "")) if COL_LEADER in df.columns else ""
       )
 
-      # 팀장 배지 HTML 생성
+      # 팀장 배지 HTML 생성 (안전한 단일 라인 처리)
       leader_badge = (
           f'<span style="background-color: #d4af37; color: #0f172a; padding:'
           f' 2px 8px; border-radius: 6px; font-size: 0.85rem; font-weight:'
@@ -210,24 +210,20 @@ if search_query and search_query.strip():
           else ""
       )
 
-      # 박스 안으로 안전하게 들어가도록 Flexbox 하나로 통일된 HTML 카드 렌더링
-      card_html = f"""
-            <div class="search-result-box">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div>
-                        <span style="color: #ffffff; font-size: 1.25rem; font-weight: 900;">🛡️ {name}</span>
-                        <span style="color: #ffd700; font-size: 1.1rem; font-weight: bold; margin-left: 8px;">[{corps}]</span>
-                        {leader_badge}
-                    </div>
-                    <div>
-                        <span style="color: #cbd5e0; font-size: 0.95rem;">전투력:</span> 
-                        <span style="color: #4fe3c1; font-size: 1.1rem; font-weight: bold; margin-right: 8px;">{power}</span>
-                        <span style="color: #cbd5e0; font-size: 0.95rem;">활약도:</span> 
-                        <span style="color: #ffffff; font-size: 1.1rem; font-weight: bold;">{status}</span>
-                    </div>
-                </div>
-            </div>
-            """
+      # HTML 태그 노출 방지를 위해 한 줄로 완벽히 결합된 카드 컴포넌트
+      card_html = (
+          '<div class="search-result-box"><div style="display: flex;'
+          " justify-content: space-between; align-items: center; flex-wrap:"
+          ' wrap; gap: 10px;"><div><span style="color: #ffffff; font-size:'
+          f' 1.25rem; font-weight: 900;">🛡️ {name}</span><span style="color:'
+          ' #ffd700; font-size: 1.1rem; font-weight: bold; margin-left:'
+          f' 8px;">[{corps}]</span>{leader_badge}</div><div><span style="color:'
+          ' #cbd5e0; font-size: 0.95rem;">전투력:</span> <span style="color:'
+          ' #4fe3c1; font-size: 1.1rem; font-weight: bold; margin-right:'
+          f' 8px;">{power}</span><span style="color: #cbd5e0; font-size:'
+          ' 0.95rem;">활약도:</span> <span style="color: #ffffff; font-size:'
+          f' 1.1rem; font-weight: bold;">{status}</span></div></div></div>'
+      )
       st.markdown(card_html, unsafe_allow_html=True)
   else:
     st.markdown(
