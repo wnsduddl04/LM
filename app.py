@@ -27,7 +27,7 @@ bg_style = (
     else "url('https://raw.githubusercontent.com/7aab/your-repo/main/assets/bg_palace.webp')"
 )
 
-# --- 🎨 모바일 반응형 및 카드형 UI 최적화 CSS ---
+# --- 🎨 상단 헤더와 일체감 있는 삼국지 게임풍 테마 CSS ---
 st.markdown(
     f"""
 <style>
@@ -40,7 +40,7 @@ st.markdown(
     color: #ffffff;
 }}
 
-/* 2. 메인 헤더 배너 스타일 */
+/* 2. 메인 헤더 배너 스타일 (사용자 제공 사진 기준) */
 .main-header {{
     background: rgba(15, 23, 42, 0.85);
     border: 2px solid rgba(212, 175, 55, 0.6);
@@ -59,13 +59,14 @@ st.markdown(
     margin: 0;
 }}
 
-/* 3. 현황 정보 및 검색 결과 카드 (노란 글씨 & 테두리 강조형) */
+/* 3. 상단 헤더 분위기를 그대로 계승한 카드 컴포넌트 (검색 결과 및 군단 요약용) */
 .stat-card {{
-    background: rgba(15, 23, 42, 0.92);
-    border: 2px solid #ffd700;
+    background: rgba(15, 23, 42, 0.85);
+    border: 2px solid rgba(212, 175, 55, 0.6);
     border-radius: 12px;
     padding: 18px 22px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(212, 175, 55, 0.25);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
     margin-bottom: 15px;
 }}
 
@@ -80,7 +81,7 @@ st.markdown(
     color: #ffd700;
     font-size: 1.4rem;
     font-weight: 800;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
 }}
 
 /* 4. 라디오 버튼 내부 텍스트 크기 및 가독성 설정 */
@@ -179,7 +180,6 @@ with col_text:
 total_count = len(df)
 
 # --- 3. 검색 및 필터 UI ---
-# Streamlit text_input은 기본적으로 글자를 타이핑할 때마다 엔터 없이 즉시 반영됩니다.
 search_query = st.text_input(
     "🔍 연맹원 이름 검색",
     placeholder="장수 이름을 입력하세요 (예: 유비, 조조...)",
@@ -263,7 +263,7 @@ if selected_status != "전체 활약" and target_status_col in filtered_df.colum
   ]
 
 
-# --- 5. 실시간 검색 결과 카드 표시 (이름을 입력하면 럭키문 연맹 제목 바로 아래에 노란 글씨 카드로 즉시 출력) ---
+# --- 5. 실시간 검색 결과 카드 표시 (상단 헤더와 동일한 카드 분위기 적용) ---
 if search_query and search_query.strip():
   st.markdown(
       f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
@@ -272,7 +272,6 @@ if search_query and search_query.strip():
   )
 
   if not filtered_df.empty:
-    # 검색된 결과들을 군단장 카드 스타일의 노란 테두리 박스로 표시
     for _, row in filtered_df.iterrows():
       name = row.get(COL_NAME, "이름 없음")
       corps = row.get(COL_CORPS, "소속 없음")
