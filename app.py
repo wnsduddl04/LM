@@ -59,15 +59,15 @@ st.markdown(
     margin: 0;
 }}
 
-/* 3. 사진 속 분위기의 다크 네이비 테두리 패널 (카드 컴포넌트) */
+/* 3. 검색 결과 카드 컴포넌트 스타일 */
 .stat-card {{
-    background: rgba(15, 23, 42, 0.9);
-    border: 2px solid rgba(212, 175, 55, 0.6);
+    background: rgba(15, 23, 42, 0.95);
+    border: 2px solid rgba(212, 175, 55, 0.7);
     border-radius: 12px;
     padding: 16px 20px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(8px);
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }}
 
 .stat-label {{
@@ -197,7 +197,7 @@ if search_query and COL_NAME in filtered_df.columns:
   ]
 
 
-# --- 5. 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 (Streamlit 기본 컴포넌트 조합) ---
+# --- 5. 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 (안전한 HTML 통합 렌더링) ---
 if search_query and search_query.strip():
   st.markdown(
       f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
@@ -220,38 +220,34 @@ if search_query and search_query.strip():
           str(row.get(COL_LEADER, "")) if COL_LEADER in df.columns else ""
       )
 
-      # 카드 컨테이너 시작
-      with st.container():
-        st.markdown('<div class="stat-card">', unsafe_allow_html=True)
-        c1, c2 = st.columns([1.2, 1])
+      # 팀장 배지 HTML 생성
+      leader_badge = (
+          f'<span style="background-color: #d4af37; color: #0f172a; padding:'
+          f' 2px 8px; border-radius: 6px; font-size: 0.85rem; font-weight:'
+          f' bold; margin-left: 10px;">{leader}</span>'
+          if leader and leader not in ["nan", "None", "", "일반"]
+          else ""
+      )
 
-        with c1:
-          leader_html = (
-              f'<span style="background-color: #d4af37; color: #0f172a; '
-              f'padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; '
-              f'font-weight: bold; margin-left: 10px;">{leader}</span>'
-              if leader and leader not in ["nan", "None", "", "일반"]
-              else ""
-          )
-          st.markdown(
-              f'<span style="color: #ffffff; font-size: 1.25rem; font-weight:'
-              f' 900;">🛡️ {name}</span> <span style="color: #ffd700; font-size:'
-              f' 1.1rem; font-weight: bold; margin-left: 10px;">[{corps}]</span>'
-              f" {leader_html}",
-              unsafe_allow_html=True,
-          )
-
-        with c2:
-          st.markdown(
-              f'<div style="text-align: right;"><span style="color: #cbd5e0;'
-              f' font-size: 0.95rem;">전투력:</span> <span style="color:'
-              f' #4fe3c1; font-weight: bold; font-size: 1.1rem;">{power}</span>'
-              f' <span style="color: #cbd5e0; font-size: 0.95rem; margin-left:'
-              f' 12px;">활약도:</span> <span style="color: #ffffff; font-weight:'
-              f' bold; font-size: 1.1rem;">{status}</span></div>',
-              unsafe_allow_html=True,
-          )
-        st.markdown("</div>", unsafe_allow_html=True)
+      # 카드의 왼쪽(이름/군단/배지)과 오른쪽(전투력/활약도)을 Flexbox로 완벽하게 배치
+      card_html = f"""
+            <div class="stat-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <span style="color: #ffffff; font-size: 1.25rem; font-weight: 900;">🛡️ {name}</span>
+                        <span style="color: #ffd700; font-size: 1.1rem; font-weight: bold; margin-left: 10px;">[{corps}]</span>
+                        {leader_badge}
+                    </div>
+                    <div>
+                        <span style="color: #cbd5e0; font-size: 0.95rem;">전투력:</span> 
+                        <span style="color: #4fe3c1; font-weight: bold; font-size: 1.1rem; margin-right: 12px;">{power}</span>
+                        <span style="color: #cbd5e0; font-size: 0.95rem;">활약도:</span> 
+                        <span style="color: #ffffff; font-weight: bold; font-size: 1.1rem;">{status}</span>
+                    </div>
+                </div>
+            </div>
+            """
+      st.markdown(card_html, unsafe_allow_html=True)
   else:
     st.markdown(
         f"""
