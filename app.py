@@ -160,7 +160,7 @@ COL_LEADER = "군단장"
 
 total_count = len(df)
 
-# --- 2. 상단 메인 헤더 영역 (다시 복원) ---
+# --- 2. 상단 메인 헤더 영역 ---
 col_logo, col_text = st.columns([1, 4])
 
 with col_logo:
@@ -180,10 +180,10 @@ with col_text:
     """, unsafe_allow_html=True)
 
 
-# --- 3. 검색 및 필터 UI ---
+# --- 3. 검색 및 필터 UI (안내 문구 수정) ---
 search_query = st.text_input(
     "🔍 연맹원 이름 검색",
-    placeholder="장수 이름을 입력하세요 (예: 유비, 조조...)",
+    placeholder="찾고자 하는 주군의 이름을 적어주세요",
     label_visibility="collapsed",
 )
 
@@ -197,7 +197,7 @@ if search_query and COL_NAME in filtered_df.columns:
   ]
 
 
-# --- 5. [핵심] 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 ---
+# --- 5. 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 ---
 if search_query and search_query.strip():
   st.markdown(
       f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
@@ -243,7 +243,7 @@ if search_query and search_query.strip():
         f"""
         <div class="stat-card" style="border-color: #ef4444;">
             <div style="color: #ef4444; font-size: 1.1rem; font-weight: bold; text-align: center;">
-                ❌ '{search_query}'에 해당하는 연맹원이 없습니다.
+                ❌ '{search_query}'에 해당하는 주군이 없습니다.
             </div>
         </div>
         """,
@@ -259,7 +259,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-col_f1, col_f2 = rt_col1, rt_col2 = st.columns(2)
+col_f1, col_f2 = st.columns(2)
 
 # 군단 필터
 with col_f1:
@@ -396,7 +396,7 @@ search_msg = (
 
 st.markdown(
     f"<p style='color: #ffffff; font-size: 1.05rem; text-shadow: 1px 1px 2px"
-    f" rgba(0,0,0,0.8);'><b>표시 중인 장수{search_msg}:</b>"
+    f" rgba(0,0,0,0.8);'><b>표시 중인 주군{search_msg}:</b>"
     f" <span style='color:#ffd700; font-weight:bold;'>{displayed_count}명</span>"
     f" (전체 {total_count}명)</p>",
     unsafe_allow_html=True,
