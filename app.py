@@ -178,7 +178,7 @@ if search_query and COL_NAME in filtered_df.columns:
   ]
 
 
-# --- 5. 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 (안전한 Streamlit 기본 구성) ---
+# --- 5. 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 ---
 if search_query and search_query.strip():
   st.markdown(
       f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
@@ -201,33 +201,37 @@ if search_query and search_query.strip():
           str(row.get(COL_LEADER, "")) if COL_LEADER in df.columns else ""
       )
 
-      # 카드를 안전한 HTML 상자로 감싸고 내부 내용은 깔끔하게 출력
+      # 팀장 배지 HTML 생성
+      leader_badge = (
+          f'<span style="background-color: #d4af37; color: #0f172a; padding:'
+          f' 2px 8px; border-radius: 6px; font-size: 0.85rem; font-weight:'
+          f' bold; margin-left: 8px;">{leader}</span>'
+          if leader and leader not in ["nan", "None", "", "일반"]
+          else ""
+      )
+
       with st.container():
         st.markdown('<div class="search-result-box">', unsafe_allow_html=True)
         col_info1, col_info2 = st.columns([1.3, 1])
 
         with col_info1:
-          leader_text = (
-              f" [{leader}]"
-              if leader and leader not in ["nan", "None", "", "일반"]
-              else ""
-          )
           st.markdown(
-              f"### 🛡️ {name} &nbsp;&nbsp;<span"
-              f" style='color:#ffd700;'>[{corps}]</span><span"
-              f" style='background-color:#d4af37; color:#0f172a; padding:2px"
-              f" 8px; border-radius:6px; font-size:0.85rem; font-weight:bold;'"
-              f" \>{leader_text}</span>",
+              f'<div style="color: #ffffff; font-size: 1.25rem; font-weight:'
+              f' 900;">🛡️ {name} <span style="color: #ffd700; font-size: 1.1rem;'
+              f' font-weight: bold; margin-left: 8px;">[{corps}]</span>'
+              f' {leader_badge}</div>',
               unsafe_allow_html=True,
           )
 
         with col_info2:
           st.markdown(
-              f"<div style='text-align: right; padding-top: 5px;'><span"
-              f" style='color: #cbd5e0;'>전투력:</span> <strong style='color:"
-              f" #4fe3c1; font-size: 1.1rem;'>{power}</strong> &nbsp;&nbsp; <span"
-              f" style='color: #cbd5e0;'>활약도:</span> <strong style='color:"
-              f" #ffffff; font-size: 1.1rem;'>{status}</strong></div>",
+              f'<div style="text-align: right; padding-top: 3px;"><span'
+              f' style="color: #cbd5e0; font-size: 0.95rem;">전투력:</span>'
+              f' <strong style="color: #4fe3c1; font-size: 1.1rem;'
+              f' margin-right: 8px;">{power}</strong> <span style="color:'
+              f' #cbd5e0; font-size: 0.95rem;">활약도:</span> <strong'
+              f' style="color: #ffffff; font-size:'
+              f' 1.1rem;">{status}</strong></div>',
               unsafe_allow_html=True,
           )
         st.markdown("</div>", unsafe_allow_html=True)
