@@ -15,7 +15,7 @@ def load_data():
   for encoding in ["cp949", "utf-8", "latin1"]:
     try:
       df = pd.read_csv("members.csv", encoding=encoding)
-      # 텍스트 컬럼들의 앞뒤 공백 제거 (활약도나 군단명 필터 오작동 방지)
+      # 모든 텍스트 열의 앞뒤 공백 제거
       for col in df.select_dtypes(include=["object"]).columns:
         df[col] = df[col].astype(str).str.strip()
       return df
@@ -26,12 +26,12 @@ def load_data():
 
 df = load_data()
 
-# 컬럼 이름 정의
-COL_NAME = "이름"
+# 컬럼 이름 정의 (A열: 이름, C열/기타: 군단명, G열: 팀장/군단장 여부 등)
+COL_NAME = "이름"  # A열
 COL_CORPS = "군단명"
 COL_POWER = "전투력"
 COL_STATUS = "활약도"
-COL_LEADER = "군단장"  # G열 (실제 팀장/군단장 이름이 들어있는 열)
+COL_LEADER = "군단장"  # G열 (여기에 "팀장" 또는 관련 표시가 있는 행의 A열 이름을 가져옴)
 
 # 제목 설정
 st.title("🛡️ LM 연맹원 전투력별 군단 나눔 현황판")
@@ -61,13 +61,20 @@ selected_corps = st.radio(
 # 2. 활약도 선택 버튼 ('상당한 활약' 제외)
 status_list = ["전체 활약"]
 if COL_STATUS in df.columns:
-  unique_status = df[COL_STATUS].dropna().unique().tolist()
-  unique_status = [
-      s
-      for s in unique_status
-      if "상당한 활약" not in str(s) and str(s) != "nan"
-  ]
-  status_list.extend([str(s) for s in unique_status if str(s).strip() != ""])
+  # 데이터에 있는 활약도 목록 추출 후 공백 제거 및 중복 제거
+  raw_status = df[COL_STATUS].dropna().astype(str).tolist()
+  unique_status = sorted(
+      list(
+          set(
+              [
+                  s.strip()
+                  for s in raw_status
+                  if "상당한 활약" not in s and s != "nan" and s != ""
+              ]
+          )
+      )
+  )
+  status_list.extend(unique_status)
 else:
   status_list.extend(["★★★ 굉장", "★★ 매우", "★ 활약", "✕ 저조"])
 
@@ -80,7 +87,7 @@ st.markdown("---")
 # --- 데이터 필터링 로직 ---
 filtered_df = df.copy()
 
-# 1. 검색어 필터
+# 1. 검색어 필터 (이름 기준)
 if search_query and COL_NAME in filtered_df.columns:
   filtered_df = filtered_df[
       filtered_df[COL_NAME].astype(str).str.contains(search_query, na=False)
@@ -89,10 +96,11 @@ if search_query and COL_NAME in filtered_df.columns:
 # 2. 군단 필터
 if selected_corps != "전체" and COL_CORPS in filtered_df.columns:
   filtered_df = filtered_df[
-      filtered_df[COL_CORPS].astype(str) == str(selected_corps)
+      filtered_df[COL_CORPS].astype(str).str.strip()
+      == str(selected_corps).strip()
   ]
 
-# 3. 활약도 필터 (공백 및 정확한 값 매칭 처리)
+# 3. 활약도 필터 (정확한 문자열 매칭)
 if selected_status != "전체 활약" and COL_STATUS in filtered_df.columns:
   filtered_df = filtered_df[
       filtered_df[COL_STATUS].astype(str).str.strip()
@@ -100,35 +108,33 @@ if selected_status != "전체 활약" and COL_STATUS in filtered_df.columns:
   ]
 
 
-# --- 💡 특정 군단 선택 시 [실제 팀장 이름] 및 [전체 전투력] 강조 표시 ---
+# --- 💡 특정 군단 선택 시 [G열이 '팀장'인 행의 A열 이름] 및 [전체 전투력] 표시 ---
 if selected_corps != "전체":
   st.markdown(f"### 🚩 [{selected_corps}] 현황 정보")
 
   # 해당 군단에 속한 전체 행들
-  corps_all_df = df[df[COL_CORPS].astype(str) == str(selected_corps)]
+  corps_all_df = df[df[COL_CORPS].astype(str).str.strip() == str(selected_corps).strip()]
 
   col1, col2 = st.columns(2)
 
   with col1:
-    # G열(군단장)에 적힌 실제 유저 이름을 가져오도록 수정
-    if COL_LEADER in df.columns:
-      # '팀장'이라는 글자 자체이거나 빈 값이면 제외하고 실제 이름만 추출
-      raw_leaders = corps_all_df[COL_LEADER].dropna().astype(str).tolist()
-      valid_leaders = [
-          l
-          for l in raw_leaders
-          if l != "팀장" and l != "nan" and l.strip() != ""
+    # G열(COL_LEADER) 값이 "팀장"인 행을 찾아서, 그 행의 A열(COL_NAME) 이름을 가져옴
+    if COL_LEADER in df.columns and COL_NAME in df.columns:
+      # G열 값이 "팀장" (또는 팀장이 포함된 텍스트)인 행 필터링
+      leader_rows = corps_all_df[
+          corps_all_df[COL_LEADER].astype(str).str.contains("팀장", na=False)
       ]
-
-      if valid_leaders:
-        leader_str = ", ".join(sorted(list(set(valid_leaders))))
+      
+      if not leader_rows.empty:
+        # 해당 행들의 A열(이름) 추출
+        leader_names = leader_rows[COL_NAME].dropna().astype(str).tolist()
+        leader_str = ", ".join(sorted(list(set(leader_names)))) if leader_names else "팀장 지정 없음"
       else:
-        # 혹시 G열에 별도의 이름이 없고 '팀장'이라고만 적혀있다면 행의 '이름'을 띄워주거나 안내
-        leader_str = "등록된 군단장 이름 확인 필요"
+        leader_str = "등록된 팀장 없음"
 
       st.info(f"👑 **군단장 (팀장):** {leader_str}")
     else:
-      st.info("👑 **군단장 (팀장):** '군단장' 컬럼이 없습니다.")
+      st.info("👑 **군단장 (팀장):** 컬럼 설정을 확인해 주세요.")
 
   with col2:
     # 전투력 합계 계산
