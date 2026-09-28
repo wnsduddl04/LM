@@ -59,29 +59,14 @@ st.markdown(
     margin: 0;
 }}
 
-/* 3. 검색 결과 카드 컴포넌트 스타일 */
-.stat-card {{
+/* 3. 검색 결과 카드 박스 스타일 */
+.search-result-box {{
     background: rgba(15, 23, 42, 0.95);
     border: 2px solid rgba(212, 175, 55, 0.7);
     border-radius: 12px;
     padding: 16px 20px;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
     margin-bottom: 12px;
-}}
-
-.stat-label {{
-    color: #cbd5e0;
-    font-size: 1rem;
-    font-weight: bold;
-    margin-bottom: 6px;
-}}
-
-.stat-value {{
-    color: #ffd700;
-    font-size: 1.4rem;
-    font-weight: 800;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
 }}
 
 /* 4. 라디오 버튼 내부 텍스트 크기 및 가독성 설정 */
@@ -123,10 +108,6 @@ div[data-testid="stDataFrame"] {{
     
     .filter-title {{
         font-size: 1rem !important;
-    }}
-    
-    .stat-value {{
-        font-size: 1.15rem !important;
     }}
 }}
 </style>
@@ -197,7 +178,7 @@ if search_query and COL_NAME in filtered_df.columns:
   ]
 
 
-# --- 5. 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 (안전한 HTML 통합 렌더링) ---
+# --- 5. 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 (안전한 Streamlit 기본 구성) ---
 if search_query and search_query.strip():
   st.markdown(
       f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
@@ -220,38 +201,40 @@ if search_query and search_query.strip():
           str(row.get(COL_LEADER, "")) if COL_LEADER in df.columns else ""
       )
 
-      # 팀장 배지 HTML 생성
-      leader_badge = (
-          f'<span style="background-color: #d4af37; color: #0f172a; padding:'
-          f' 2px 8px; border-radius: 6px; font-size: 0.85rem; font-weight:'
-          f' bold; margin-left: 10px;">{leader}</span>'
-          if leader and leader not in ["nan", "None", "", "일반"]
-          else ""
-      )
+      # 카드를 안전한 HTML 상자로 감싸고 내부 내용은 깔끔하게 출력
+      with st.container():
+        st.markdown('<div class="search-result-box">', unsafe_allow_html=True)
+        col_info1, col_info2 = st.columns([1.3, 1])
 
-      # 카드의 왼쪽(이름/군단/배지)과 오른쪽(전투력/활약도)을 Flexbox로 완벽하게 배치
-      card_html = f"""
-            <div class="stat-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div>
-                        <span style="color: #ffffff; font-size: 1.25rem; font-weight: 900;">🛡️ {name}</span>
-                        <span style="color: #ffd700; font-size: 1.1rem; font-weight: bold; margin-left: 10px;">[{corps}]</span>
-                        {leader_badge}
-                    </div>
-                    <div>
-                        <span style="color: #cbd5e0; font-size: 0.95rem;">전투력:</span> 
-                        <span style="color: #4fe3c1; font-weight: bold; font-size: 1.1rem; margin-right: 12px;">{power}</span>
-                        <span style="color: #cbd5e0; font-size: 0.95rem;">활약도:</span> 
-                        <span style="color: #ffffff; font-weight: bold; font-size: 1.1rem;">{status}</span>
-                    </div>
-                </div>
-            </div>
-            """
-      st.markdown(card_html, unsafe_allow_html=True)
+        with col_info1:
+          leader_text = (
+              f" [{leader}]"
+              if leader and leader not in ["nan", "None", "", "일반"]
+              else ""
+          )
+          st.markdown(
+              f"### 🛡️ {name} &nbsp;&nbsp;<span"
+              f" style='color:#ffd700;'>[{corps}]</span><span"
+              f" style='background-color:#d4af37; color:#0f172a; padding:2px"
+              f" 8px; border-radius:6px; font-size:0.85rem; font-weight:bold;'"
+              f" \>{leader_text}</span>",
+              unsafe_allow_html=True,
+          )
+
+        with col_info2:
+          st.markdown(
+              f"<div style='text-align: right; padding-top: 5px;'><span"
+              f" style='color: #cbd5e0;'>전투력:</span> <strong style='color:"
+              f" #4fe3c1; font-size: 1.1rem;'>{power}</strong> &nbsp;&nbsp; <span"
+              f" style='color: #cbd5e0;'>활약도:</span> <strong style='color:"
+              f" #ffffff; font-size: 1.1rem;'>{status}</strong></div>",
+              unsafe_allow_html=True,
+          )
+        st.markdown("</div>", unsafe_allow_html=True)
   else:
     st.markdown(
         f"""
-        <div class="stat-card" style="border-color: #ef4444;">
+        <div class="search-result-box" style="border-color: #ef4444;">
             <div style="color: #ef4444; font-size: 1.1rem; font-weight: bold; text-align: center;">
                 ❌ '{search_query}'에 해당하는 주군이 없습니다.
             </div>
@@ -362,9 +345,9 @@ if selected_corps != "전체":
 
     st.markdown(
         f"""
-        <div class="stat-card">
-            <div class="stat-label">👑 군단장 (팀장)</div>
-            <div class="stat-value">{leader_str}</div>
+        <div class="search-result-box">
+            <div style="color: #cbd5e0; font-size: 1rem; font-weight: bold; margin-bottom: 6px;">👑 군단장 (팀장)</div>
+            <div style="color: #ffd700; font-size: 1.4rem; font-weight: 800;">{leader_str}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -385,9 +368,9 @@ if selected_corps != "전체":
 
     st.markdown(
         f"""
-        <div class="stat-card">
-            <div class="stat-label">⚔️ 군단 총 전투력 (인원: {len(corps_all_df)}명)</div>
-            <div class="stat-value" style="color: #4fe3c1;">{total_power_str}</div>
+        <div class="search-result-box">
+            <div style="color: #cbd5e0; font-size: 1rem; font-weight: bold; margin-bottom: 6px;">⚔️ 군단 총 전투력 (인원: {len(corps_all_df)}명)</div>
+            <div style="color: #4fe3c1; font-size: 1.4rem; font-weight: 800;">{total_power_str}</div>
         </div>
         """,
         unsafe_allow_html=True,
