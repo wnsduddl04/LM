@@ -27,7 +27,7 @@ bg_style = (
     else "url('https://raw.githubusercontent.com/7aab/your-repo/main/assets/bg_palace.webp')"
 )
 
-# --- 🎨 하얀 박스를 제거하고 라디오 버튼 글씨를 크고 선명하게 만드는 CSS ---
+# --- 🎨 모바일 반응형 및 가독성 최적화 CSS ---
 st.markdown(
     f"""
 <style>
@@ -40,7 +40,7 @@ st.markdown(
     color: #ffffff;
 }}
 
-/* 2. 메인 헤더 배너 스타일 */
+/* 2. 메인 헤더 배너 스타일 (PC 기본) */
 .main-header {{
     background: rgba(15, 23, 42, 0.85);
     border: 2px solid rgba(212, 175, 55, 0.6);
@@ -81,10 +81,10 @@ st.markdown(
     font-weight: 800;
 }}
 
-/* 4. 라디오 버튼 내부 텍스트 크기 키우고 두껍게, 그림자로 가독성 극대화 */
+/* 4. 라디오 버튼 내부 텍스트 크기 및 가독성 설정 */
 div[data-testid="stRadio"] label p {{
     color: #ffffff !important;
-    font-size: 1.2rem !important;
+    font-size: 1.15rem !important;
     font-weight: 800 !important;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.8);
 }}
@@ -95,6 +95,34 @@ div[data-testid="stDataFrame"] {{
     border-radius: 10px;
     border: 1px solid rgba(212, 175, 55, 0.3);
     padding: 8px;
+}}
+
+/* ==========================================
+   📱 모바일 화면 최적화 (화면 너비 768px 이하)
+   ========================================== */
+@media screen and (max-width: 768px) {{
+    .main-header {{
+        padding: 12px;
+        margin-bottom: 15px;
+    }}
+    
+    .header-title {{
+        font-size: 1.35rem !important; /* 모바일에서 타이틀 크기를 줄여 밀림 방지 */
+    }}
+    
+    .main-header p {{
+        font-size: 0.85rem !important;
+    }}
+    
+    /* 모바일에서 라디오 버튼 글씨 크기 적정화 및 간격 확보 */
+    div[data-testid="stRadio"] label p {{
+        font-size: 0.95rem !important;
+    }}
+    
+    /* 필터 타이틀 크기 조정 */
+    .filter-title {{
+        font-size: 1rem !important;
+    }}
 }}
 </style>
 """,
@@ -130,9 +158,9 @@ col_logo, col_text = st.columns([1, 4])
 
 with col_logo:
   if os.path.exists("assets/icon_warrior.png"):
-    st.image("assets/icon_warrior.png", width=110)
+    st.image("assets/icon_warrior.png", width=90)
   elif os.path.exists("assets/logo_moon.png"):
-    st.image("assets/logo_moon.png", width=110)
+    st.image("assets/logo_moon.png", width=90)
   else:
     st.title("🛡️")
 
@@ -154,19 +182,19 @@ search_query = st.text_input(
 )
 
 st.markdown(
-    "<h3 style='color: #ffd700; margin-top: 20px; text-shadow: 2px 2px 4px"
-    " rgba(0,0,0,0.8);'>⚔️ 군단 및 활약도 선택</h3>",
+    "<h3 style='color: #ffd700; margin-top: 20px; font-size: 1.3rem;"
+    " text-shadow: 2px 2px 4px rgba(0,0,0,0.8);'>⚔️ 군단 및 활약도 선택</h3>",
     unsafe_allow_html=True,
 )
 
 col_f1, col_f2 = st.columns(2)
 
-# 군단 필터 (박스 제거, 텍스트 크기 확대)
+# 군단 필터
 with col_f1:
   st.markdown(
-      "<p style='color:#ffd700; font-size:1.15rem; font-weight:800;"
-      " margin-bottom:5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);'>🚩 군단"
-      " 필터</p>",
+      "<p class='filter-title' style='color:#ffd700; font-size:1.15rem;"
+      " font-weight:800; margin-bottom:5px; text-shadow: 1px 1px 3px"
+      " rgba(0,0,0,0.8);'>🚩 군단 필터</p>",
       unsafe_allow_html=True,
   )
   corps_list = ["전체"]
@@ -179,12 +207,12 @@ with col_f1:
       "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
   )
 
-# 활약도 필터 (박스 제거, 텍스트 크기 확대)
+# 활약도 필터
 with col_f2:
   st.markdown(
-      "<p style='color:#ffd700; font-size:1.15rem; font-weight:800;"
-      " margin-bottom:5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);'>🔥"
-      " 활약도(접속률) 필터</p>",
+      "<p class='filter-title' style='color:#ffd700; font-size:1.15rem;"
+      " font-weight:800; margin-bottom:5px; text-shadow: 1px 1px 3px"
+      " rgba(0,0,0,0.8);'>🔥 활약도(접속률) 필터</p>",
       unsafe_allow_html=True,
   )
   status_list = ["전체 활약"]
@@ -233,8 +261,8 @@ if selected_status != "전체 활약" and target_status_col in filtered_df.colum
 # --- 5. 특정 군단 선택 시 요약 카드 ---
 if selected_corps != "전체":
   st.markdown(
-      f"<h2 style='color: #ffd700; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);'>🚩"
-      f" [{selected_corps}] 군단 현황 요약</h2>",
+      f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
+      f" rgba(0,0,0,0.8);'>🚩 [{selected_corps}] 군단 현황 요약</h2>",
       unsafe_allow_html=True,
   )
 
@@ -261,7 +289,7 @@ if selected_corps != "전체":
         f"""
         <div class="stat-card">
             <div class="stat-label">👑 군단장 (팀장)</div>
-            <div class="stat-value" style="color: #ffd700;">{leader_str}</div>
+            <div class="stat-value" style="color: #ffd700; font-size: 1.2rem;">{leader_str}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -284,7 +312,7 @@ if selected_corps != "전체":
         f"""
         <div class="stat-card">
             <div class="stat-label">⚔️ 군단 총 전투력 (인원: {len(corps_all_df)}명)</div>
-            <div class="stat-value" style="color: #4fe3c1;">{total_power_str}</div>
+            <div class="stat-value" style="color: #4fe3c1; font-size: 1.2rem;">{total_power_str}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -296,7 +324,7 @@ if selected_corps != "전체":
 # --- 6. 결과 표 출력 ---
 displayed_count = len(filtered_df)
 st.markdown(
-    f"<p style='color: #ffffff; font-size: 1.1rem; text-shadow: 1px 1px 2px"
+    f"<p style='color: #ffffff; font-size: 1.05rem; text-shadow: 1px 1px 2px"
     f" rgba(0,0,0,0.8);'><b>표시 중인 장수:</b>"
     f" <span style='color:#ffd700; font-weight:bold;'>{displayed_count}명</span>"
     f" (전체 {total_count}명)</p>",
