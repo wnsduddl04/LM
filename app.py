@@ -22,11 +22,13 @@ def load_data():
 
 df = load_data()
 
-# 컬럼 이름 정의
+# 컬럼 이름 정의 (CSV 구조에 맞게 매핑)
 COL_NAME = "이름"
 COL_CORPS = "군단명"
 COL_POWER = "전투력"
 COL_STATUS = "활약도"
+# G열에 해당하는 군단장(팀장) 컬럼명 (실제 CSV의 G열 헤더 이름과 일치해야 합니다. 예: "군단장" 또는 "팀장")
+COL_LEADER = "군단장"
 
 # 제목 설정
 st.title("🛡️ LM 연맹원 전투력별 군단 나눔 현황판")
@@ -53,11 +55,10 @@ selected_corps = st.radio(
     "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
 )
 
-# 2. 활약도 선택 버튼 ('상당한 활약'은 목록에서 제외)
+# 2. 활약도 선택 버튼 ('상당한 활약' 제외)
 status_list = ["전체 활약"]
 if COL_STATUS in df.columns:
   unique_status = df[COL_STATUS].dropna().unique().tolist()
-  # '상당한 활약' 글자가 포함된 항목은 버튼 목록에서 제외합니다.
   unique_status = [
       s for s in unique_status if "상당한 활약" not in str(s)
   ]
@@ -91,6 +92,52 @@ if selected_status != "전체 활약" and COL_STATUS in filtered_df.columns:
   filtered_df = filtered_df[
       filtered_df[COL_STATUS].astype(str) == str(selected_status)
   ]
+
+
+# --- 💡 특정 군단 선택 시 [팀장 정보] 및 [전체 전투력] 강조 표시 ---
+if selected_corps != "전체":
+  st.markdown(f"### 🚩 [{selected_corps}] 현황 정보")
+
+  # 해당 군단에 속한 전체 행들 (검색어나 활약도 필터가 걸리기 전 기준)
+  corps_all_df = df[df[COL_CORPS].astype(str) == str(selected_corps)]
+
+  col1, col2 = st.columns(2)
+
+  with col1:
+    # 팀장(군단장) 정보 추출 (중복 제거 후 표시)
+    if COL_LEADER in df.columns:
+      leaders = corps_all_df[COL_LEADER].dropna().unique().tolist()
+      leader_str = (
+          ", ".join(str(l) for l in leaders) if leaders else "등록된 팀장 없음"
+      )
+      st.info(f"👑 **군단장 (팀장):** {leader_str}")
+    else:
+      st.info(
+          "👑 **군단장 (팀장):** CSV 파일에 '군단장' 컬럼을 확인해 주세요."
+      )
+
+  with col2:
+    # 전투력 합계 계산
+    if COL_POWER in df.columns:
+      # 숫자로 변환 가능한 값만 골라서 합산 (콤마나 문자열 제거 처리)
+      power_series = pd.to_numeric(
+          corps_all_df[COL_POWER]
+          .astype(str)
+          .str.replace(",", "")
+          .str.replace("만", ""),
+          errors="coerce",
+      ).fillna(0)
+      total_power = power_series.sum()
+
+      # 보기 좋게 억/만 단위나 콤마 포맷으로 표시
+      st.success(
+          f"⚔️ **군단 총 전투력:** {int(total_power):,} (인원: {len(corps_all_df)}명)"
+      )
+    else:
+      st.success(f"⚔️ **군단 인원:** {len(corps_all_df)}명")
+
+  st.markdown("---")
+
 
 # --- 하단 통계 숫자 표시 ---
 displayed_count = len(filtered_df)
