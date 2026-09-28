@@ -40,7 +40,7 @@ st.markdown(
     color: #ffffff;
 }}
 
-/* 2. 메인 헤더 배너 스타일 (PC 기본) */
+/* 2. 메인 헤더 배너 스타일 */
 .main-header {{
     background: rgba(15, 23, 42, 0.85);
     border: 2px solid rgba(212, 175, 55, 0.6);
@@ -107,19 +107,17 @@ div[data-testid="stDataFrame"] {{
     }}
     
     .header-title {{
-        font-size: 1.35rem !important; /* 모바일에서 타이틀 크기를 줄여 밀림 방지 */
+        font-size: 1.35rem !important;
     }}
     
     .main-header p {{
         font-size: 0.85rem !important;
     }}
     
-    /* 모바일에서 라디오 버튼 글씨 크기 적정화 및 간격 확보 */
     div[data-testid="stRadio"] label p {{
         font-size: 0.95rem !important;
     }}
     
-    /* 필터 타이틀 크기 조정 */
     .filter-title {{
         font-size: 1rem !important;
     }}
@@ -237,7 +235,7 @@ with col_f2:
 
 st.markdown("---")
 
-# --- 4. 데이터 필터링 ---
+# --- 4. 데이터 필터링 (검색어 + 군단 + 활약도 통합 적용) ---
 filtered_df = df.copy()
 
 if search_query and COL_NAME in filtered_df.columns:
@@ -321,11 +319,17 @@ if selected_corps != "전체":
   st.markdown("<br>", unsafe_allow_html=True)
 
 
-# --- 6. 결과 표 출력 ---
+# --- 6. 결과 표 출력 (검색어 결과 즉시 반영) ---
 displayed_count = len(filtered_df)
+search_msg = (
+    f" (검색어: '{search_query}')"
+    if (search_query and search_query.strip())
+    else ""
+  )
+
 st.markdown(
     f"<p style='color: #ffffff; font-size: 1.05rem; text-shadow: 1px 1px 2px"
-    f" rgba(0,0,0,0.8);'><b>표시 중인 장수:</b>"
+    f" rgba(0,0,0,0.8);'><b>표시 중인 장수{search_msg}:</b>"
     f" <span style='color:#ffd700; font-weight:bold;'>{displayed_count}명</span>"
     f" (전체 {total_count}명)</p>",
     unsafe_allow_html=True,
