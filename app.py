@@ -27,7 +27,7 @@ bg_style = (
     else "url('https://raw.githubusercontent.com/7aab/your-repo/main/assets/bg_palace.webp')"
 )
 
-# --- 🎨 삼국지 게임풍 테마 CSS (헤더 박스 제거 및 카드/패널 일체화) ---
+# --- 🎨 삼국지 게임풍 테마 CSS ---
 st.markdown(
     f"""
 <style>
@@ -40,7 +40,26 @@ st.markdown(
     color: #ffffff;
 }}
 
-/* 2. 사진 속 분위기의 다크 네이비 테두리 패널 (카드 컴포넌트) */
+/* 2. 상단 메인 헤더 배너 스타일 */
+.main-header {{
+    background: rgba(15, 23, 42, 0.85);
+    border: 2px solid rgba(212, 175, 55, 0.6);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+}}
+
+.header-title {{
+    color: #ffd700;
+    font-size: 2.2rem;
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    margin: 0;
+}}
+
+/* 3. 사진 속 분위기의 다크 네이비 테두리 패널 (카드 컴포넌트) */
 .stat-card {{
     background: rgba(15, 23, 42, 0.9);
     border: 2px solid rgba(212, 175, 55, 0.6);
@@ -65,7 +84,7 @@ st.markdown(
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
 }}
 
-/* 3. 라디오 버튼 내부 텍스트 크기 및 가독성 설정 */
+/* 4. 라디오 버튼 내부 텍스트 크기 및 가독성 설정 */
 div[data-testid="stRadio"] label p {{
     color: #ffffff !important;
     font-size: 1.15rem !important;
@@ -85,6 +104,19 @@ div[data-testid="stDataFrame"] {{
    📱 모바일 화면 최적화 (화면 너비 768px 이하)
    ========================================== */
 @media screen and (max-width: 768px) {{
+    .main-header {{
+        padding: 12px;
+        margin-bottom: 15px;
+    }}
+    
+    .header-title {{
+        font-size: 1.35rem !important;
+    }}
+    
+    .main-header p {{
+        font-size: 0.85rem !important;
+    }}
+    
     div[data-testid="stRadio"] label p {{
         font-size: 0.95rem !important;
     }}
@@ -128,20 +160,106 @@ COL_LEADER = "군단장"
 
 total_count = len(df)
 
-# --- 2. 검색 및 필터 UI (헤더 박스 제거 후 바로 배치) ---
+# --- 2. 상단 메인 헤더 영역 (다시 복원) ---
+col_logo, col_text = st.columns([1, 4])
+
+with col_logo:
+  if os.path.exists("assets/icon_warrior.png"):
+    st.image("assets/icon_warrior.png", width=90)
+  elif os.path.exists("assets/logo_moon.png"):
+    st.image("assets/logo_moon.png", width=90)
+  else:
+    st.title("🛡️")
+
+with col_text:
+  st.markdown("""
+        <div class="main-header">
+            <h1 class="header-title">🌙 LUCKY MOON 럭키문 연맹</h1>
+            <p style="color: #e2e8f0; font-size: 1.05rem; margin-top: 5px; margin-bottom: 0;">전투력별 군단 나눔 및 연맹원 실시간 관리 현황판</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+
+# --- 3. 검색 및 필터 UI ---
 search_query = st.text_input(
     "🔍 연맹원 이름 검색",
     placeholder="장수 이름을 입력하세요 (예: 유비, 조조...)",
     label_visibility="collapsed",
 )
 
+
+# --- 4. 데이터 필터링 미리 계산 ---
+filtered_df = df.copy()
+
+if search_query and COL_NAME in filtered_df.columns:
+  filtered_df = filtered_df[
+      filtered_df[COL_NAME].astype(str).str.contains(search_query, na=False)
+  ]
+
+
+# --- 5. [핵심] 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 ---
+if search_query and search_query.strip():
+  st.markdown(
+      f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
+      f" rgba(0,0,0,0.8); margin-top: 10px;'>🔍 '{search_query}' 실시간 검색"
+      " 결과</h2>",
+      unsafe_allow_html=True,
+  )
+
+  if not filtered_df.empty:
+    for _, row in filtered_df.iterrows():
+      name = row.get(COL_NAME, "이름 없음")
+      corps = row.get(COL_CORPS, "소속 없음")
+      power = row.get(COL_POWER, "정보 없음")
+      status = (
+          row.get(COL_STATUS, "정보 없음")
+          if COL_STATUS in df.columns
+          else row.get("활약도", "정보 없음")
+      )
+      leader = (
+          row.get(COL_LEADER, "") if COL_LEADER in df.columns else "일반"
+      )
+
+      st.markdown(
+          f"""
+            <div class="stat-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <div>
+                        <span style="color: #ffffff; font-size: 1.3rem; font-weight: 900;">🛡️ {name}</span>
+                        <span style="color: #ffd700; font-size: 1.1rem; font-weight: bold; margin-left: 10px;">[{corps}]</span>
+                        {f'<span style="background-color: #d4af37; color: #0f172a; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; margin-left: 10px;">{leader}</span>' if leader and str(leader) not in ['nan', 'None', '', '일반'] else ''}
+                    </div>
+                    <div style="margin-top: 5px;">
+                        <span style="color: #cbd5e0; font-size: 0.95rem;">전투력:</span> <span style="color: #4fe3c1; font-weight: bold; font-size: 1.1rem;">{power}</span>
+                        <span style="color: #cbd5e0; font-size: 0.95rem; margin-left: 15px;">활약도:</span> <span style="color: #ffffff; font-weight: bold; font-size: 1.1rem;">{status}</span>
+                    </div>
+                </div>
+            </div>
+            """,
+          unsafe_allow_html=True,
+      )
+  else:
+    st.markdown(
+        f"""
+        <div class="stat-card" style="border-color: #ef4444;">
+            <div style="color: #ef4444; font-size: 1.1rem; font-weight: bold; text-align: center;">
+                ❌ '{search_query}'에 해당하는 연맹원이 없습니다.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+  st.markdown("<br>", unsafe_allow_html=True)
+
+
+# --- 6. 군단 및 활약도 선택 필터 ---
 st.markdown(
-    "<h3 style='color: #ffd700; margin-top: 15px; font-size: 1.3rem;"
+    "<h3 style='color: #ffd700; margin-top: 10px; font-size: 1.3rem;"
     " text-shadow: 2px 2px 4px rgba(0,0,0,0.8);'>⚔️ 군단 및 활약도 선택</h3>",
     unsafe_allow_html=True,
 )
 
-col_f1, col_f2 = st.columns(2)
+col_f1, col_f2 = rt_col1, rt_col2 = st.columns(2)
 
 # 군단 필터
 with col_f1:
@@ -191,14 +309,7 @@ with col_f2:
 
 st.markdown("---")
 
-# --- 3. 데이터 필터링 (검색어 + 군단 + 활약도 통합 적용) ---
-filtered_df = df.copy()
-
-if search_query and COL_NAME in filtered_df.columns:
-  filtered_df = filtered_df[
-      filtered_df[COL_NAME].astype(str).str.contains(search_query, na=False)
-  ]
-
+# --- 7. 최종 필터 적용 (군단 + 활약도) ---
 if selected_corps != "전체" and COL_CORPS in filtered_df.columns:
   filtered_df = filtered_df[
       filtered_df[COL_CORPS].astype(str).str.strip()
@@ -212,57 +323,7 @@ if selected_status != "전체 활약" and target_status_col in filtered_df.colum
   ]
 
 
-# --- 4. 실시간 검색 결과 카드 표시 (사진 속 분위기 패널 적용) ---
-if search_query and search_query.strip():
-  st.markdown(
-      f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
-      f" rgba(0,0,0,0.8);'>🔍 '{search_query}' 실시간 검색 결과</h2>",
-      unsafe_allow_html=True,
-  )
-
-  if not filtered_df.empty:
-    for _, row in filtered_df.iterrows():
-      name = row.get(COL_NAME, "이름 없음")
-      corps = row.get(COL_CORPS, "소속 없음")
-      power = row.get(COL_POWER, "정보 없음")
-      status = row.get(target_status_col, "정보 없음")
-      leader = (
-          row.get(COL_LEADER, "") if COL_LEADER in df.columns else "일반"
-      )
-
-      st.markdown(
-          f"""
-            <div class="stat-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                    <div>
-                        <span style="color: #ffffff; font-size: 1.3rem; font-weight: 900;">🛡️ {name}</span>
-                        <span style="color: #ffd700; font-size: 1.1rem; font-weight: bold; margin-left: 10px;">[{corps}]</span>
-                        {f'<span style="background-color: #d4af37; color: #0f172a; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; margin-left: 10px;">{leader}</span>' if leader and str(leader) not in ['nan', 'None', '', '일반'] else ''}
-                    </div>
-                    <div style="margin-top: 5px;">
-                        <span style="color: #cbd5e0; font-size: 0.95rem;">전투력:</span> <span style="color: #4fe3c1; font-weight: bold; font-size: 1.1rem;">{power}</span>
-                        <span style="color: #cbd5e0; font-size: 0.95rem; margin-left: 15px;">활약도:</span> <span style="color: #ffffff; font-weight: bold; font-size: 1.1rem;">{status}</span>
-                    </div>
-                </div>
-            </div>
-            """,
-          unsafe_allow_html=True,
-      )
-  else:
-    st.markdown(
-        f"""
-        <div class="stat-card" style="border-color: #ef4444;">
-            <div style="color: #ef4444; font-size: 1.1rem; font-weight: bold; text-align: center;">
-                ❌ '{search_query}'에 해당하는 연맹원이 없습니다.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-  st.markdown("<br>", unsafe_allow_html=True)
-
-
-# --- 5. 특정 군단 선택 시 요약 카드 ---
+# --- 8. 특정 군단 선택 시 요약 카드 ---
 if selected_corps != "전체":
   st.markdown(
       f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
@@ -325,7 +386,7 @@ if selected_corps != "전체":
   st.markdown("<br>", unsafe_allow_html=True)
 
 
-# --- 6. 결과 표 출력 ---
+# --- 9. 결과 표 출력 ---
 displayed_count = len(filtered_df)
 search_msg = (
     f" (검색어: '{search_query}')"
