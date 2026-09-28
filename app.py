@@ -27,7 +27,7 @@ bg_style = (
     else "url('https://raw.githubusercontent.com/7aab/your-repo/main/assets/bg_palace.webp')"
 )
 
-# --- 🎨 상단 헤더와 일체감 있는 삼국지 게임풍 테마 CSS ---
+# --- 🎨 삼국지 게임풍 테마 CSS (헤더 박스 제거 및 카드/패널 일체화) ---
 st.markdown(
     f"""
 <style>
@@ -40,28 +40,9 @@ st.markdown(
     color: #ffffff;
 }}
 
-/* 2. 메인 헤더 배너 스타일 (사용자 제공 사진 기준) */
-.main-header {{
-    background: rgba(15, 23, 42, 0.85);
-    border: 2px solid rgba(212, 175, 55, 0.6);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 25px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-}}
-
-.header-title {{
-    color: #ffd700;
-    font-size: 2.2rem;
-    font-weight: 800;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-    margin: 0;
-}}
-
-/* 3. 상단 헤더 분위기를 그대로 계승한 카드 컴포넌트 (검색 결과 및 군단 요약용) */
+/* 2. 사진 속 분위기의 다크 네이비 테두리 패널 (카드 컴포넌트) */
 .stat-card {{
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.9);
     border: 2px solid rgba(212, 175, 55, 0.6);
     border-radius: 12px;
     padding: 18px 22px;
@@ -84,7 +65,7 @@ st.markdown(
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
 }}
 
-/* 4. 라디오 버튼 내부 텍스트 크기 및 가독성 설정 */
+/* 3. 라디오 버튼 내부 텍스트 크기 및 가독성 설정 */
 div[data-testid="stRadio"] label p {{
     color: #ffffff !important;
     font-size: 1.15rem !important;
@@ -104,19 +85,6 @@ div[data-testid="stDataFrame"] {{
    📱 모바일 화면 최적화 (화면 너비 768px 이하)
    ========================================== */
 @media screen and (max-width: 768px) {{
-    .main-header {{
-        padding: 12px;
-        margin-bottom: 15px;
-    }}
-    
-    .header-title {{
-        font-size: 1.35rem !important;
-    }}
-    
-    .main-header p {{
-        font-size: 0.85rem !important;
-    }}
-    
     div[data-testid="stRadio"] label p {{
         font-size: 0.95rem !important;
     }}
@@ -158,28 +126,9 @@ COL_POWER = "전투력"
 COL_STATUS = "접속률"
 COL_LEADER = "군단장"
 
-# --- 2. 상단 메인 헤더 영역 ---
-col_logo, col_text = st.columns([1, 4])
-
-with col_logo:
-  if os.path.exists("assets/icon_warrior.png"):
-    st.image("assets/icon_warrior.png", width=90)
-  elif os.path.exists("assets/logo_moon.png"):
-    st.image("assets/logo_moon.png", width=90)
-  else:
-    st.title("🛡️")
-
-with col_text:
-  st.markdown("""
-        <div class="main-header">
-            <h1 class="header-title">🌙 LUCKY MOON 럭키문 연맹</h1>
-            <p style="color: #e2e8f0; font-size: 1.05rem; margin-top: 5px; margin-bottom: 0;">전투력별 군단 나눔 및 연맹원 실시간 관리 현황판</p>
-        </div>
-    """, unsafe_allow_html=True)
-
 total_count = len(df)
 
-# --- 3. 검색 및 필터 UI ---
+# --- 2. 검색 및 필터 UI (헤더 박스 제거 후 바로 배치) ---
 search_query = st.text_input(
     "🔍 연맹원 이름 검색",
     placeholder="장수 이름을 입력하세요 (예: 유비, 조조...)",
@@ -187,7 +136,7 @@ search_query = st.text_input(
 )
 
 st.markdown(
-    "<h3 style='color: #ffd700; margin-top: 20px; font-size: 1.3rem;"
+    "<h3 style='color: #ffd700; margin-top: 15px; font-size: 1.3rem;"
     " text-shadow: 2px 2px 4px rgba(0,0,0,0.8);'>⚔️ 군단 및 활약도 선택</h3>",
     unsafe_allow_html=True,
 )
@@ -242,7 +191,7 @@ with col_f2:
 
 st.markdown("---")
 
-# --- 4. 데이터 필터링 (검색어 + 군단 + 활약도 통합 적용) ---
+# --- 3. 데이터 필터링 (검색어 + 군단 + 활약도 통합 적용) ---
 filtered_df = df.copy()
 
 if search_query and COL_NAME in filtered_df.columns:
@@ -263,7 +212,7 @@ if selected_status != "전체 활약" and target_status_col in filtered_df.colum
   ]
 
 
-# --- 5. 실시간 검색 결과 카드 표시 (상단 헤더와 동일한 카드 분위기 적용) ---
+# --- 4. 실시간 검색 결과 카드 표시 (사진 속 분위기 패널 적용) ---
 if search_query and search_query.strip():
   st.markdown(
       f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
@@ -313,7 +262,7 @@ if search_query and search_query.strip():
   st.markdown("<br>", unsafe_allow_html=True)
 
 
-# --- 6. 특정 군단 선택 시 요약 카드 ---
+# --- 5. 특정 군단 선택 시 요약 카드 ---
 if selected_corps != "전체":
   st.markdown(
       f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
@@ -376,7 +325,7 @@ if selected_corps != "전체":
   st.markdown("<br>", unsafe_allow_html=True)
 
 
-# --- 7. 결과 표 출력 ---
+# --- 6. 결과 표 출력 ---
 displayed_count = len(filtered_df)
 search_msg = (
     f" (검색어: '{search_query}')"
