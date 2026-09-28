@@ -27,11 +27,11 @@ bg_style = (
     else "url('https://raw.githubusercontent.com/7aab/your-repo/main/assets/bg_palace.webp')"
 )
 
-# --- 🎨 배경을 밝고 화사하게 조정하고 가독성을 높인 CSS ---
+# --- 🎨 하얀 박스를 제거하고 라디오 버튼 글씨를 크고 선명하게 만드는 CSS ---
 st.markdown(
     f"""
 <style>
-/* 1. 전체 앱 배경 (어두운 오버레이를 걷어내고 배경을 훨씬 밝고 선명하게 조정) */
+/* 1. 전체 앱 배경 */
 .stApp {{
     background: linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.5)), {bg_style};
     background-size: cover;
@@ -81,14 +81,12 @@ st.markdown(
     font-weight: 800;
 }}
 
-/* 4. 필터 박스 가시성을 위한 배경 패널 */
-.filter-panel {{
-    background-color: rgba(255, 255, 255, 0.92);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-    color: #0f172a;
-    margin-bottom: 10px;
+/* 4. 라디오 버튼 내부 텍스트 크기 키우고 두껍게, 그림자로 가독성 극대화 */
+div[data-testid="stRadio"] label p {{
+    color: #ffffff !important;
+    font-size: 1.2rem !important;
+    font-weight: 800 !important;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.8);
 }}
 
 /* 데이터프레임(표) 스타일 */
@@ -163,13 +161,12 @@ st.markdown(
 
 col_f1, col_f2 = st.columns(2)
 
-# 군단 필터 (밝고 선명한 하얀색 패널 적용)
+# 군단 필터 (박스 제거, 텍스트 크기 확대)
 with col_f1:
-  st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
   st.markdown(
-      "<p"
-      " style='color:#0f172a; font-size:1.2rem; font-weight:900;"
-      " margin-bottom:12px;'>🚩 군단 필터</p>",
+      "<p style='color:#ffd700; font-size:1.15rem; font-weight:800;"
+      " margin-bottom:5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);'>🚩 군단"
+      " 필터</p>",
       unsafe_allow_html=True,
   )
   corps_list = ["전체"]
@@ -181,15 +178,13 @@ with col_f1:
   selected_corps = st.radio(
       "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
   )
-  st.markdown("</div>", unsafe_allow_html=True)
 
-# 활약도 필터 (밝고 선명한 하얀색 패널 적용)
+# 활약도 필터 (박스 제거, 텍스트 크기 확대)
 with col_f2:
-  st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
   st.markdown(
-      "<p"
-      " style='color:#0f172a; font-size:1.2rem; font-weight:900;"
-      " margin-bottom:12px;'>🔥 활약도(접속률) 필터</p>",
+      "<p style='color:#ffd700; font-size:1.15rem; font-weight:800;"
+      " margin-bottom:5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);'>🔥"
+      " 활약도(접속률) 필터</p>",
       unsafe_allow_html=True,
   )
   status_list = ["전체 활약"]
@@ -211,7 +206,6 @@ with col_f2:
   selected_status = st.radio(
       "활약도 선택", status_list, horizontal=True, label_visibility="collapsed"
   )
-  st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 
