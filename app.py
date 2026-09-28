@@ -14,7 +14,11 @@ st.set_page_config(
 def load_data():
   for encoding in ["cp949", "utf-8", "latin1"]:
     try:
-      return pd.read_csv("members.csv", encoding=encoding)
+      df = pd.read_csv("members.csv", encoding=encoding)
+      # 텍스트 컬럼들의 앞뒤 공백 제거 (활약도나 군단명 필터 오작동 방지)
+      for col in df.select_dtypes(include=["object"]).columns:
+        df[col] = df[col].astype(str).str.strip()
+      return df
     except:
       continue
   return pd.DataFrame()
@@ -22,13 +26,12 @@ def load_data():
 
 df = load_data()
 
-# 컬럼 이름 정의 (CSV 구조에 맞게 매핑)
+# 컬럼 이름 정의
 COL_NAME = "이름"
 COL_CORPS = "군단명"
 COL_POWER = "전투력"
 COL_STATUS = "활약도"
-# G열에 해당하는 군단장(팀장) 컬럼명 (실제 CSV의 G열 헤더 이름과 일치해야 합니다. 예: "군단장" 또는 "팀장")
-COL_LEADER = "군단장"
+COL_LEADER = "군단장"  # G열 (실제 팀장/군단장 이름이 들어있는 열)
 
 # 제목 설정
 st.title("🛡️ LM 연맹원 전투력별 군단 나눔 현황판")
@@ -49,7 +52,7 @@ st.markdown("---")
 corps_list = ["전체"]
 if COL_CORPS in df.columns:
   unique_corps = df[COL_CORPS].dropna().unique().tolist()
-  corps_list.extend([str(c) for c in unique_corps])
+  corps_list.extend([str(c) for c in unique_corps if str(c) != "nan"])
 
 selected_corps = st.radio(
     "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
@@ -60,7 +63,9 @@ status_list = ["전체 활약"]
 if COL_STATUS in df.columns:
   unique_status = df[COL_STATUS].dropna().unique().tolist()
   unique_status = [
-      s for s in unique_status if "상당한 활약" not in str(s)
+      s
+      for s in unique_status
+      if "상당한 활약" not in str(s) and str(s) != "nan"
   ]
   status_list.extend([str(s) for s in unique_status if str(s).strip() != ""])
 else:
@@ -87,39 +92,47 @@ if selected_corps != "전체" and COL_CORPS in filtered_df.columns:
       filtered_df[COL_CORPS].astype(str) == str(selected_corps)
   ]
 
-# 3. 활약도 필터
+# 3. 활약도 필터 (공백 및 정확한 값 매칭 처리)
 if selected_status != "전체 활약" and COL_STATUS in filtered_df.columns:
   filtered_df = filtered_df[
-      filtered_df[COL_STATUS].astype(str) == str(selected_status)
+      filtered_df[COL_STATUS].astype(str).str.strip()
+      == str(selected_status).strip()
   ]
 
 
-# --- 💡 특정 군단 선택 시 [팀장 정보] 및 [전체 전투력] 강조 표시 ---
+# --- 💡 특정 군단 선택 시 [실제 팀장 이름] 및 [전체 전투력] 강조 표시 ---
 if selected_corps != "전체":
   st.markdown(f"### 🚩 [{selected_corps}] 현황 정보")
 
-  # 해당 군단에 속한 전체 행들 (검색어나 활약도 필터가 걸리기 전 기준)
+  # 해당 군단에 속한 전체 행들
   corps_all_df = df[df[COL_CORPS].astype(str) == str(selected_corps)]
 
   col1, col2 = st.columns(2)
 
   with col1:
-    # 팀장(군단장) 정보 추출 (중복 제거 후 표시)
+    # G열(군단장)에 적힌 실제 유저 이름을 가져오도록 수정
     if COL_LEADER in df.columns:
-      leaders = corps_all_df[COL_LEADER].dropna().unique().tolist()
-      leader_str = (
-          ", ".join(str(l) for l in leaders) if leaders else "등록된 팀장 없음"
-      )
+      # '팀장'이라는 글자 자체이거나 빈 값이면 제외하고 실제 이름만 추출
+      raw_leaders = corps_all_df[COL_LEADER].dropna().astype(str).tolist()
+      valid_leaders = [
+          l
+          for l in raw_leaders
+          if l != "팀장" and l != "nan" and l.strip() != ""
+      ]
+
+      if valid_leaders:
+        leader_str = ", ".join(sorted(list(set(valid_leaders))))
+      else:
+        # 혹시 G열에 별도의 이름이 없고 '팀장'이라고만 적혀있다면 행의 '이름'을 띄워주거나 안내
+        leader_str = "등록된 군단장 이름 확인 필요"
+
       st.info(f"👑 **군단장 (팀장):** {leader_str}")
     else:
-      st.info(
-          "👑 **군단장 (팀장):** CSV 파일에 '군단장' 컬럼을 확인해 주세요."
-      )
+      st.info("👑 **군단장 (팀장):** '군단장' 컬럼이 없습니다.")
 
   with col2:
     # 전투력 합계 계산
     if COL_POWER in df.columns:
-      # 숫자로 변환 가능한 값만 골라서 합산 (콤마나 문자열 제거 처리)
       power_series = pd.to_numeric(
           corps_all_df[COL_POWER]
           .astype(str)
@@ -128,8 +141,6 @@ if selected_corps != "전체":
           errors="coerce",
       ).fillna(0)
       total_power = power_series.sum()
-
-      # 보기 좋게 억/만 단위나 콤마 포맷으로 표시
       st.success(
           f"⚔️ **군단 총 전투력:** {int(total_power):,} (인원: {len(corps_all_df)}명)"
       )
