@@ -27,13 +27,13 @@ bg_style = (
     else "url('https://raw.githubusercontent.com/7aab/your-repo/main/assets/bg_palace.webp')"
 )
 
-# --- 🎨 삼국지 게임 감성 및 버튼 가독성 극대화 CSS ---
+# --- 🎨 필터 영역 하얀색 배경 및 가독성 확실한 CSS ---
 st.markdown(
     f"""
 <style>
 /* 1. 전체 앱 배경 (궁궐 배경 + 어두운 반투명 오버레이) */
 .stApp {{
-    background: linear-gradient(rgba(12, 16, 26, 0.85), rgba(12, 16, 26, 0.90)), {bg_style};
+    background: linear-gradient(rgba(12, 16, 26, 0.85), rgba(12, 16, 26, 0.92)), {bg_style};
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -42,7 +42,7 @@ st.markdown(
 
 /* 2. 메인 헤더 배너 스타일 */
 .main-header {{
-    background: rgba(20, 27, 45, 0.8);
+    background: rgba(20, 27, 45, 0.85);
     border: 1px solid rgba(212, 175, 55, 0.5);
     border-radius: 12px;
     padding: 20px;
@@ -81,16 +81,20 @@ st.markdown(
     font-weight: 800;
 }}
 
-/* 4. [핵심] 라디오 버튼 글씨 크기 확대 및 흰색 선명하게 처리 */
-div[data-baseweb="radio"] {{
-    background-color: rgba(18, 24, 38, 0.85);
-    padding: 12px 15px;
-    border-radius: 8px;
-    border: 1px solid rgba(212, 175, 55, 0.3);
+/* 4. [핵심] 필터가 들어있는 컬럼 박스를 하얀색 배경으로 깔끔하게 처리 */
+.filter-box {{
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 18px 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    margin-bottom: 10px;
 }}
 
-div[data-baseweb="radio"] label p {{
-    color: #ffffff !important;
+/* 하얀 박스 안의 라디오 버튼 글씨를 진한 검은색, 큼직하게 설정 */
+.filter-box label p, 
+.filter-box span, 
+.filter-box div[data-baseweb="radio"] p {{
+    color: #111111 !important;
     font-size: 1.15rem !important;
     font-weight: 700 !important;
 }}
@@ -166,9 +170,12 @@ st.markdown(
 
 col_f1, col_f2 = st.columns(2)
 
+# 군단 필터 (하얀색 박스 적용)
 with col_f1:
+  st.markdown('<div class="filter-box">', unsafe_allow_html=True)
   st.markdown(
-      "<p style='color: #e2e8f0; font-weight: bold; margin-bottom: 5px;'>🚩"
+      "<p"
+      " style='color:#1a202c;font-size:1.1rem;font-weight:bold;margin-bottom:8px;'>🚩"
       " 군단 필터</p>",
       unsafe_allow_html=True,
   )
@@ -181,10 +188,14 @@ with col_f1:
   selected_corps = st.radio(
       "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
   )
+  st.markdown("</div>", unsafe_allow_html=True)
 
+# 활약도 필터 (하얀색 박스 적용)
 with col_f2:
+  st.markdown('<div class="filter-box">', unsafe_allow_html=True)
   st.markdown(
-      "<p style='color: #e2e8f0; font-weight: bold; margin-bottom: 5px;'>🔥"
+      "<p"
+      " style='color:#1a202c;font-size:1.1rem;font-weight:bold;margin-bottom:8px;'>🔥"
       " 활약도(접속률) 필터</p>",
       unsafe_allow_html=True,
   )
@@ -207,6 +218,7 @@ with col_f2:
   selected_status = st.radio(
       "활약도 선택", status_list, horizontal=True, label_visibility="collapsed"
   )
+  st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 
