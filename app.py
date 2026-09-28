@@ -210,31 +210,25 @@ if search_query and search_query.strip():
           else ""
       )
 
-      with st.container():
-        st.markdown('<div class="search-result-box">', unsafe_allow_html=True)
-        col_info1, col_info2 = st.columns([1.3, 1])
-
-        with col_info1:
-          st.markdown(
-              f'<div style="color: #ffffff; font-size: 1.25rem; font-weight:'
-              f' 900;">🛡️ {name} <span style="color: #ffd700; font-size: 1.1rem;'
-              f' font-weight: bold; margin-left: 8px;">[{corps}]</span>'
-              f' {leader_badge}</div>',
-              unsafe_allow_html=True,
-          )
-
-        with col_info2:
-          st.markdown(
-              f'<div style="text-align: right; padding-top: 3px;"><span'
-              f' style="color: #cbd5e0; font-size: 0.95rem;">전투력:</span>'
-              f' <strong style="color: #4fe3c1; font-size: 1.1rem;'
-              f' margin-right: 8px;">{power}</strong> <span style="color:'
-              f' #cbd5e0; font-size: 0.95rem;">활약도:</span> <strong'
-              f' style="color: #ffffff; font-size:'
-              f' 1.1rem;">{status}</strong></div>',
-              unsafe_allow_html=True,
-          )
-        st.markdown("</div>", unsafe_allow_html=True)
+      # 박스 안으로 안전하게 들어가도록 Flexbox 하나로 통일된 HTML 카드 렌더링
+      card_html = f"""
+            <div class="search-result-box">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <span style="color: #ffffff; font-size: 1.25rem; font-weight: 900;">🛡️ {name}</span>
+                        <span style="color: #ffd700; font-size: 1.1rem; font-weight: bold; margin-left: 8px;">[{corps}]</span>
+                        {leader_badge}
+                    </div>
+                    <div>
+                        <span style="color: #cbd5e0; font-size: 0.95rem;">전투력:</span> 
+                        <span style="color: #4fe3c1; font-size: 1.1rem; font-weight: bold; margin-right: 8px;">{power}</span>
+                        <span style="color: #cbd5e0; font-size: 0.95rem;">활약도:</span> 
+                        <span style="color: #ffffff; font-size: 1.1rem; font-weight: bold;">{status}</span>
+                    </div>
+                </div>
+            </div>
+            """
+      st.markdown(card_html, unsafe_allow_html=True)
   else:
     st.markdown(
         f"""
