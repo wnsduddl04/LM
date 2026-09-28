@@ -180,7 +180,7 @@ with col_text:
     """, unsafe_allow_html=True)
 
 
-# --- 3. 검색 및 필터 UI (안내 문구 수정) ---
+# --- 3. 검색 및 필터 UI ---
 search_query = st.text_input(
     "🔍 연맹원 이름 검색",
     placeholder="찾고자 하는 주군의 이름을 적어주세요",
@@ -217,17 +217,21 @@ if search_query and search_query.strip():
           else row.get("활약도", "정보 없음")
       )
       leader = (
-          row.get(COL_LEADER, "") if COL_LEADER in df.columns else "일반"
+          str(row.get(COL_LEADER, "")) if COL_LEADER in df.columns else ""
       )
 
-      st.markdown(
-          f"""
+      # 팀장 배지 HTML 생성 (안전하게 분리)
+      leader_badge = ""
+      if leader and leader not in ["nan", "None", "", "일반"]:
+        leader_badge = f'<span style="background-color: #d4af37; color: #0f172a; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; margin-left: 10px;">{leader}</span>'
+
+      card_html = f"""
             <div class="stat-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                     <div>
                         <span style="color: #ffffff; font-size: 1.3rem; font-weight: 900;">🛡️ {name}</span>
                         <span style="color: #ffd700; font-size: 1.1rem; font-weight: bold; margin-left: 10px;">[{corps}]</span>
-                        {f'<span style="background-color: #d4af37; color: #0f172a; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; margin-left: 10px;">{leader}</span>' if leader and str(leader) not in ['nan', 'None', '', '일반'] else ''}
+                        {leader_badge}
                     </div>
                     <div style="margin-top: 5px;">
                         <span style="color: #cbd5e0; font-size: 0.95rem;">전투력:</span> <span style="color: #4fe3c1; font-weight: bold; font-size: 1.1rem;">{power}</span>
@@ -235,9 +239,8 @@ if search_query and search_query.strip():
                     </div>
                 </div>
             </div>
-            """,
-          unsafe_allow_html=True,
-      )
+            """
+      st.markdown(card_html, unsafe_allow_html=True)
   else:
     st.markdown(
         f"""
