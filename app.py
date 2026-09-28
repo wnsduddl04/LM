@@ -27,13 +27,13 @@ bg_style = (
     else "url('https://raw.githubusercontent.com/7aab/your-repo/main/assets/bg_palace.webp')"
 )
 
-# --- 🎨 필터 박스 및 가독성 완성형 CSS ---
+# --- 🎨 배경을 밝고 화사하게 조정하고 가독성을 높인 CSS ---
 st.markdown(
     f"""
 <style>
-/* 1. 전체 앱 배경 (궁궐 배경 + 어두운 반투명 오버레이) */
+/* 1. 전체 앱 배경 (어두운 오버레이를 걷어내고 배경을 훨씬 밝고 선명하게 조정) */
 .stApp {{
-    background: linear-gradient(rgba(12, 16, 26, 0.85), rgba(12, 16, 26, 0.92)), {bg_style};
+    background: linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.5)), {bg_style};
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -42,8 +42,8 @@ st.markdown(
 
 /* 2. 메인 헤더 배너 스타일 */
 .main-header {{
-    background: rgba(20, 27, 45, 0.85);
-    border: 1px solid rgba(212, 175, 55, 0.5);
+    background: rgba(15, 23, 42, 0.85);
+    border: 2px solid rgba(212, 175, 55, 0.6);
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 25px;
@@ -59,9 +59,9 @@ st.markdown(
     margin: 0;
 }}
 
-/* 3. 현황 정보 카드 (군단장 & 전투력) */
+/* 3. 현황 정보 카드 */
 .stat-card {{
-    background: rgba(25, 33, 52, 0.9);
+    background: rgba(15, 23, 42, 0.9);
     border: 1px solid #d4af37;
     border-radius: 10px;
     padding: 15px 20px;
@@ -81,23 +81,17 @@ st.markdown(
     font-weight: 800;
 }}
 
-/* 4. Streamlit 컨테이너를 하얀색 카드 박스로 변환 및 글씨 검은색 처리 */
-div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {{
-    background-color: #ffffff !important;
-    border-radius: 12px !important;
-    padding: 20px !important;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+/* 4. 필터 박스 가시성을 위한 배경 패널 */
+.filter-panel {{
+    background-color: rgba(255, 255, 255, 0.92);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    color: #0f172a;
+    margin-bottom: 10px;
 }}
 
-/* 하얀 박스 내부의 모든 라디오 버튼 글씨를 진한 검은색, 큼직하게 설정 */
-div[data-testid="stContainer"] label p,
-div[data-testid="stContainer"] span {{
-    color: #111111 !important;
-    font-size: 1.15rem !important;
-    font-weight: 700 !important;
-}}
-
-/* 5. 데이터프레임(표) 스타일 */
+/* 데이터프레임(표) 스타일 */
 div[data-testid="stDataFrame"] {{
     background: rgba(15, 20, 32, 0.9);
     border-radius: 10px;
@@ -162,61 +156,62 @@ search_query = st.text_input(
 )
 
 st.markdown(
-    "<h3 style='color: #ffd700; margin-top: 20px;'>⚔️ 군단 및 활약도 선택</h3>",
+    "<h3 style='color: #ffd700; margin-top: 20px; text-shadow: 2px 2px 4px"
+    " rgba(0,0,0,0.8);'>⚔️ 군단 및 활약도 선택</h3>",
     unsafe_allow_html=True,
 )
 
 col_f1, col_f2 = st.columns(2)
 
-# 군단 필터 (컨테이너 박스로 감싸기)
+# 군단 필터 (밝고 선명한 하얀색 패널 적용)
 with col_f1:
-  container1 = st.container()
-  with container1:
-    st.markdown(
-        "<p"
-        " style='color:#1a202c;font-size:1.15rem;font-weight:800;margin-bottom:10px;'>🚩"
-        " 군단 필터</p>",
-        unsafe_allow_html=True,
+  st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
+  st.markdown(
+      "<p"
+      " style='color:#0f172a; font-size:1.2rem; font-weight:900;"
+      " margin-bottom:12px;'>🚩 군단 필터</p>",
+      unsafe_allow_html=True,
+  )
+  corps_list = ["전체"]
+  if COL_CORPS in df.columns:
+    unique_corps = df[COL_CORPS].dropna().unique().tolist()
+    corps_list.extend(
+        [str(c) for c in unique_corps if str(c) not in ["nan", "None"]]
     )
-    corps_list = ["전체"]
-    if COL_CORPS in df.columns:
-      unique_corps = df[COL_CORPS].dropna().unique().tolist()
-      corps_list.extend(
-          [str(c) for c in unique_corps if str(c) not in ["nan", "None"]]
-      )
-    selected_corps = st.radio(
-        "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
-    )
+  selected_corps = st.radio(
+      "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
+  )
+  st.markdown("</div>", unsafe_allow_html=True)
 
-# 활약도 필터 (컨테이너 박스로 감싸기)
+# 활약도 필터 (밝고 선명한 하얀색 패널 적용)
 with col_f2:
-  container2 = st.container()
-  with container2:
-    st.markdown(
-        "<p"
-        " style='color:#1a202c;font-size:1.15rem;font-weight:800;margin-bottom:10px;'>🔥"
-        " 활약도(접속률) 필터</p>",
-        unsafe_allow_html=True,
+  st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
+  st.markdown(
+      "<p"
+      " style='color:#0f172a; font-size:1.2rem; font-weight:900;"
+      " margin-bottom:12px;'>🔥 활약도(접속률) 필터</p>",
+      unsafe_allow_html=True,
+  )
+  status_list = ["전체 활약"]
+  target_status_col = COL_STATUS if COL_STATUS in df.columns else "활약도"
+  if target_status_col in df.columns:
+    raw_status = df[target_status_col].dropna().astype(str).tolist()
+    unique_status = sorted(
+        list(
+            set(
+                [
+                    s.strip()
+                    for s in raw_status
+                    if s not in ["nan", "None", ""]
+                ]
+            )
+        )
     )
-    status_list = ["전체 활약"]
-    target_status_col = COL_STATUS if COL_STATUS in df.columns else "활약도"
-    if target_status_col in df.columns:
-      raw_status = df[target_status_col].dropna().astype(str).tolist()
-      unique_status = sorted(
-          list(
-              set(
-                  [
-                      s.strip()
-                      for s in raw_status
-                      if s not in ["nan", "None", ""]
-                  ]
-              )
-          )
-      )
-      status_list.extend(unique_status)
-    selected_status = st.radio(
-        "활약도 선택", status_list, horizontal=True, label_visibility="collapsed"
-    )
+    status_list.extend(unique_status)
+  selected_status = st.radio(
+      "활약도 선택", status_list, horizontal=True, label_visibility="collapsed"
+  )
+  st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -244,7 +239,8 @@ if selected_status != "전체 활약" and target_status_col in filtered_df.colum
 # --- 5. 특정 군단 선택 시 요약 카드 ---
 if selected_corps != "전체":
   st.markdown(
-      f"<h2 style='color: #ffd700;'>🚩 [{selected_corps}] 군단 현황 요약</h2>",
+      f"<h2 style='color: #ffd700; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);'>🚩"
+      f" [{selected_corps}] 군단 현황 요약</h2>",
       unsafe_allow_html=True,
   )
 
@@ -306,7 +302,8 @@ if selected_corps != "전체":
 # --- 6. 결과 표 출력 ---
 displayed_count = len(filtered_df)
 st.markdown(
-    f"<p style='color: #e2e8f0; font-size: 1.1rem;'><b>표시 중인 장수:</b>"
+    f"<p style='color: #ffffff; font-size: 1.1rem; text-shadow: 1px 1px 2px"
+    f" rgba(0,0,0,0.8);'><b>표시 중인 장수:</b>"
     f" <span style='color:#ffd700; font-weight:bold;'>{displayed_count}명</span>"
     f" (전체 {total_count}명)</p>",
     unsafe_allow_html=True,
