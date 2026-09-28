@@ -26,12 +26,12 @@ def load_data():
 
 df = load_data()
 
-# 컬럼 이름 정의 (A열: 이름, C열/기타: 군단명, G열: 팀장/군단장 여부 등)
+# 컬럼 이름 정의
 COL_NAME = "이름"  # A열
 COL_CORPS = "군단명"
 COL_POWER = "전투력"
-COL_STATUS = "활약도"
-COL_LEADER = "군단장"  # G열 (여기에 "팀장" 또는 관련 표시가 있는 행의 A열 이름을 가져옴)
+COL_STATUS = "접속률"  # 스크린샷 상 활약도/접속률 데이터가 들어있는 실제 컬럼명
+COL_LEADER = "군단장"  # G열 ("팀장"이라고 적혀있는 곳)
 
 # 제목 설정
 st.title("🛡️ LM 연맹원 전투력별 군단 나눔 현황판")
@@ -52,31 +52,32 @@ st.markdown("---")
 corps_list = ["전체"]
 if COL_CORPS in df.columns:
   unique_corps = df[COL_CORPS].dropna().unique().tolist()
-  corps_list.extend([str(c) for c in unique_corps if str(c) != "nan"])
+  corps_list.extend([str(c) for c in unique_corps if str(c) != "nan" and str(c) != "None"])
 
 selected_corps = st.radio(
     "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
 )
 
-# 2. 활약도 선택 버튼 ('상당한 활약' 제외)
+# 2. 활약도(접속률) 선택 버튼 동적 생성
 status_list = ["전체 활약"]
-if COL_STATUS in df.columns:
-  # 데이터에 있는 활약도 목록 추출 후 공백 제거 및 중복 제거
-  raw_status = df[COL_STATUS].dropna().astype(str).tolist()
+target_status_col = COL_STATUS if COL_STATUS in df.columns else "활약도"
+
+if target_status_col in df.columns:
+  raw_status = df[target_status_col].dropna().astype(str).tolist()
   unique_status = sorted(
       list(
           set(
               [
                   s.strip()
                   for s in raw_status
-                  if "상당한 활약" not in s and s != "nan" and s != ""
+                  if s != "nan" and s != "None" and s != ""
               ]
           )
       )
   )
   status_list.extend(unique_status)
 else:
-  status_list.extend(["★★★ 굉장", "★★ 매우", "★ 활약", "✕ 저조"])
+  status_list.extend(["굉장한 활약"])
 
 selected_status = st.radio(
     "활약도 선택", status_list, horizontal=True, label_visibility="collapsed"
@@ -100,10 +101,10 @@ if selected_corps != "전체" and COL_CORPS in filtered_df.columns:
       == str(selected_corps).strip()
   ]
 
-# 3. 활약도 필터 (정확한 문자열 매칭)
-if selected_status != "전체 활약" and COL_STATUS in filtered_df.columns:
+# 3. 활약도(접속률) 필터
+if selected_status != "전체 활약" and target_status_col in filtered_df.columns:
   filtered_df = filtered_df[
-      filtered_df[COL_STATUS].astype(str).str.strip()
+      filtered_df[target_status_col].astype(str).str.strip()
       == str(selected_status).strip()
   ]
 
@@ -120,13 +121,11 @@ if selected_corps != "전체":
   with col1:
     # G열(COL_LEADER) 값이 "팀장"인 행을 찾아서, 그 행의 A열(COL_NAME) 이름을 가져옴
     if COL_LEADER in df.columns and COL_NAME in df.columns:
-      # G열 값이 "팀장" (또는 팀장이 포함된 텍스트)인 행 필터링
       leader_rows = corps_all_df[
-          corps_all_df[COL_LEADER].astype(str).str.contains("팀장", na=False)
+          corps_all_df[COL_LEADER].astype(str).str.strip() == "팀장"
       ]
       
       if not leader_rows.empty:
-        # 해당 행들의 A열(이름) 추출
         leader_names = leader_rows[COL_NAME].dropna().astype(str).tolist()
         leader_str = ", ".join(sorted(list(set(leader_names)))) if leader_names else "팀장 지정 없음"
       else:
