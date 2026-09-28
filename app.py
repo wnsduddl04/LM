@@ -11,7 +11,7 @@ st.set_page_config(
 )
 
 
-# --- 이미지 파일 Base64 변환 함수 (CSS 배경 적용용) ---
+# --- 이미지 파일 Base64 변환 함수 ---
 def get_image_base64(file_path):
   if os.path.exists(file_path):
     with open(file_path, "rb") as f:
@@ -27,27 +27,27 @@ bg_style = (
     else "url('https://raw.githubusercontent.com/7aab/your-repo/main/assets/bg_palace.webp')"
 )
 
-# --- 🎨 삼국지 게임 감성 고급 커스텀 CSS ---
+# --- 🎨 삼국지 게임 감성 및 버튼 가독성 극대화 CSS ---
 st.markdown(
     f"""
 <style>
 /* 1. 전체 앱 배경 (궁궐 배경 + 어두운 반투명 오버레이) */
 .stApp {{
-    background: linear-gradient(rgba(12, 16, 26, 0.82), rgba(12, 16, 26, 0.88)), {bg_style};
+    background: linear-gradient(rgba(12, 16, 26, 0.85), rgba(12, 16, 26, 0.90)), {bg_style};
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
-    color: #e0e6ed;
+    color: #ffffff;
 }}
 
 /* 2. 메인 헤더 배너 스타일 */
 .main-header {{
-    background: rgba(20, 27, 45, 0.75);
-    border: 1px solid rgba(212, 175, 55, 0.4);
+    background: rgba(20, 27, 45, 0.8);
+    border: 1px solid rgba(212, 175, 55, 0.5);
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 25px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(8px);
 }}
 
@@ -61,16 +61,16 @@ st.markdown(
 
 /* 3. 현황 정보 카드 (군단장 & 전투력) */
 .stat-card {{
-    background: rgba(25, 33, 52, 0.85);
+    background: rgba(25, 33, 52, 0.9);
     border: 1px solid #d4af37;
     border-radius: 10px;
     padding: 15px 20px;
-    box-shadow: inset 0 0 15px rgba(212, 175, 55, 0.15);
+    box-shadow: inset 0 0 15px rgba(212, 175, 55, 0.2);
 }}
 
 .stat-label {{
-    color: #a0aec0;
-    font-size: 0.9rem;
+    color: #cbd5e0;
+    font-size: 0.95rem;
     font-weight: bold;
     margin-bottom: 5px;
 }}
@@ -81,17 +81,23 @@ st.markdown(
     font-weight: 800;
 }}
 
-/* 4. 라디오 버튼 및 입력창 다크 게임 스타일 */
+/* 4. [핵심] 라디오 버튼 글씨 크기 확대 및 흰색 선명하게 처리 */
 div[data-baseweb="radio"] {{
-    background-color: rgba(18, 24, 38, 0.8);
-    padding: 10px;
+    background-color: rgba(18, 24, 38, 0.85);
+    padding: 12px 15px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}}
+
+div[data-baseweb="radio"] label p {{
+    color: #ffffff !important;
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
 }}
 
 /* 5. 데이터프레임(표) 스타일 */
 div[data-testid="stDataFrame"] {{
-    background: rgba(15, 20, 32, 0.85);
+    background: rgba(15, 20, 32, 0.9);
     border-radius: 10px;
     border: 1px solid rgba(212, 175, 55, 0.3);
     padding: 8px;
@@ -125,7 +131,7 @@ COL_POWER = "전투력"
 COL_STATUS = "접속률"
 COL_LEADER = "군단장"
 
-# --- 2. 상단 상단 메인 헤더 영역 ---
+# --- 2. 상단 메인 헤더 영역 ---
 col_logo, col_text = st.columns([1, 4])
 
 with col_logo:
@@ -140,7 +146,7 @@ with col_text:
   st.markdown("""
         <div class="main-header">
             <h1 class="header-title">🌙 LUCKY MOON 럭키문 연맹</h1>
-            <p style="color: #cbd5e0; margin-top: 5px; margin-bottom: 0;">전투력별 군단 나눔 및 연맹원 실시간 관리 현황판</p>
+            <p style="color: #e2e8f0; font-size: 1.05rem; margin-top: 5px; margin-bottom: 0;">전투력별 군단 나눔 및 연맹원 실시간 관리 현황판</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -153,12 +159,19 @@ search_query = st.text_input(
     label_visibility="collapsed",
 )
 
-st.markdown("### ⚔️ 군단 및 활약도 선택")
+st.markdown(
+    "<h3 style='color: #ffd700; margin-top: 20px;'>⚔️ 군단 및 활약도 선택</h3>",
+    unsafe_allow_html=True,
+)
 
 col_f1, col_f2 = st.columns(2)
 
 with col_f1:
-  st.caption("🚩 군단 필터")
+  st.markdown(
+      "<p style='color: #e2e8f0; font-weight: bold; margin-bottom: 5px;'>🚩"
+      " 군단 필터</p>",
+      unsafe_allow_html=True,
+  )
   corps_list = ["전체"]
   if COL_CORPS in df.columns:
     unique_corps = df[COL_CORPS].dropna().unique().tolist()
@@ -170,7 +183,11 @@ with col_f1:
   )
 
 with col_f2:
-  st.caption("🔥 활약도(접속률) 필터")
+  st.markdown(
+      "<p style='color: #e2e8f0; font-weight: bold; margin-bottom: 5px;'>🔥"
+      " 활약도(접속률) 필터</p>",
+      unsafe_allow_html=True,
+  )
   status_list = ["전체 활약"]
   target_status_col = COL_STATUS if COL_STATUS in df.columns else "활약도"
   if target_status_col in df.columns:
@@ -214,9 +231,12 @@ if selected_status != "전체 활약" and target_status_col in filtered_df.colum
   ]
 
 
-# --- 5. 특정 군단 선택 시 요약 카드 (전투력 로고 이미지 적용) ---
+# --- 5. 특정 군단 선택 시 요약 카드 ---
 if selected_corps != "전체":
-  st.markdown(f"## 🚩 [{selected_corps}] 군단 현황 요약")
+  st.markdown(
+      f"<h2 style='color: #ffd700;'>🚩 [{selected_corps}] 군단 현황 요약</h2>",
+      unsafe_allow_html=True,
+  )
 
   corps_all_df = df[
       df[COL_CORPS].astype(str).str.strip() == str(selected_corps).strip()
@@ -276,8 +296,9 @@ if selected_corps != "전체":
 # --- 6. 결과 표 출력 ---
 displayed_count = len(filtered_df)
 st.markdown(
-    f"**표시 중인 장수:** <span style='color:#ffd700; font-weight:bold;'>{displayed_count}명</span>"
-    f" (전체 {total_count}명)",
+    f"<p style='color: #e2e8f0; font-size: 1.1rem;'><b>표시 중인 장수:</b>"
+    f" <span style='color:#ffd700; font-weight:bold;'>{displayed_count}명</span>"
+    f" (전체 {total_count}명)</p>",
     unsafe_allow_html=True,
 )
 
