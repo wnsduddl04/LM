@@ -9,14 +9,14 @@ st.set_page_config(
 )
 
 
-# 1. 데이터 불러오기 (태국어 및 중국어 한자 완벽 지원을 위한 인코딩 순서 적용)
+# 1. 데이터 불러오기 (다국어 및 윈도우 환경 인코딩 오류 완벽 대응)
 @st.cache_data
 def load_data():
-  # 다국어(태국어, 중국어) 처리를 위해 utf-8을 최우선으로 시도합니다.
-  for encoding in ["utf-8-sig", "utf-8", "cp949", "latin1"]:
+  # 윈도우 환경 및 다국어 혼용 시 깨짐을 방지하기 위해 cp949와 utf-8-sig를 함께 안전하게 시도합니다.
+  for encoding in ["utf-8-sig", "cp949", "utf-8", "latin1"]:
     try:
       df = pd.read_csv("members.csv", encoding=encoding)
-      # 모든 텍스트 열의 앞뒤 공백 제거
+      # 모든 텍스트 열의 앞뒤 공백 제거 및 문자열 변환
       for col in df.select_dtypes(include=["object"]).columns:
         df[col] = df[col].astype(str).str.strip()
       return df
