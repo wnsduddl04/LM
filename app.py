@@ -27,7 +27,7 @@ bg_style = (
     else "url('https://raw.githubusercontent.com/7aab/your-repo/main/assets/bg_palace.webp')"
 )
 
-# --- 🎨 필터 영역 하얀색 배경 및 가독성 확실한 CSS ---
+# --- 🎨 필터 박스 및 가독성 완성형 CSS ---
 st.markdown(
     f"""
 <style>
@@ -81,19 +81,17 @@ st.markdown(
     font-weight: 800;
 }}
 
-/* 4. [핵심] 필터가 들어있는 컬럼 박스를 하얀색 배경으로 깔끔하게 처리 */
-.filter-box {{
-    background: #ffffff;
-    border-radius: 10px;
-    padding: 18px 20px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-    margin-bottom: 10px;
+/* 4. Streamlit 컨테이너를 하얀색 카드 박스로 변환 및 글씨 검은색 처리 */
+div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {{
+    background-color: #ffffff !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
 }}
 
-/* 하얀 박스 안의 라디오 버튼 글씨를 진한 검은색, 큼직하게 설정 */
-.filter-box label p, 
-.filter-box span, 
-.filter-box div[data-baseweb="radio"] p {{
+/* 하얀 박스 내부의 모든 라디오 버튼 글씨를 진한 검은색, 큼직하게 설정 */
+div[data-testid="stContainer"] label p,
+div[data-testid="stContainer"] span {{
     color: #111111 !important;
     font-size: 1.15rem !important;
     font-weight: 700 !important;
@@ -170,55 +168,55 @@ st.markdown(
 
 col_f1, col_f2 = st.columns(2)
 
-# 군단 필터 (하얀색 박스 적용)
+# 군단 필터 (컨테이너 박스로 감싸기)
 with col_f1:
-  st.markdown('<div class="filter-box">', unsafe_allow_html=True)
-  st.markdown(
-      "<p"
-      " style='color:#1a202c;font-size:1.1rem;font-weight:bold;margin-bottom:8px;'>🚩"
-      " 군단 필터</p>",
-      unsafe_allow_html=True,
-  )
-  corps_list = ["전체"]
-  if COL_CORPS in df.columns:
-    unique_corps = df[COL_CORPS].dropna().unique().tolist()
-    corps_list.extend(
-        [str(c) for c in unique_corps if str(c) not in ["nan", "None"]]
+  container1 = st.container()
+  with container1:
+    st.markdown(
+        "<p"
+        " style='color:#1a202c;font-size:1.15rem;font-weight:800;margin-bottom:10px;'>🚩"
+        " 군단 필터</p>",
+        unsafe_allow_html=True,
     )
-  selected_corps = st.radio(
-      "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
-  )
-  st.markdown("</div>", unsafe_allow_html=True)
+    corps_list = ["전체"]
+    if COL_CORPS in df.columns:
+      unique_corps = df[COL_CORPS].dropna().unique().tolist()
+      corps_list.extend(
+          [str(c) for c in unique_corps if str(c) not in ["nan", "None"]]
+      )
+    selected_corps = st.radio(
+        "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
+    )
 
-# 활약도 필터 (하얀색 박스 적용)
+# 활약도 필터 (컨테이너 박스로 감싸기)
 with col_f2:
-  st.markdown('<div class="filter-box">', unsafe_allow_html=True)
-  st.markdown(
-      "<p"
-      " style='color:#1a202c;font-size:1.1rem;font-weight:bold;margin-bottom:8px;'>🔥"
-      " 활약도(접속률) 필터</p>",
-      unsafe_allow_html=True,
-  )
-  status_list = ["전체 활약"]
-  target_status_col = COL_STATUS if COL_STATUS in df.columns else "활약도"
-  if target_status_col in df.columns:
-    raw_status = df[target_status_col].dropna().astype(str).tolist()
-    unique_status = sorted(
-        list(
-            set(
-                [
-                    s.strip()
-                    for s in raw_status
-                    if s not in ["nan", "None", ""]
-                ]
-            )
-        )
+  container2 = st.container()
+  with container2:
+    st.markdown(
+        "<p"
+        " style='color:#1a202c;font-size:1.15rem;font-weight:800;margin-bottom:10px;'>🔥"
+        " 활약도(접속률) 필터</p>",
+        unsafe_allow_html=True,
     )
-    status_list.extend(unique_status)
-  selected_status = st.radio(
-      "활약도 선택", status_list, horizontal=True, label_visibility="collapsed"
-  )
-  st.markdown("</div>", unsafe_allow_html=True)
+    status_list = ["전체 활약"]
+    target_status_col = COL_STATUS if COL_STATUS in df.columns else "활약도"
+    if target_status_col in df.columns:
+      raw_status = df[target_status_col].dropna().astype(str).tolist()
+      unique_status = sorted(
+          list(
+              set(
+                  [
+                      s.strip()
+                      for s in raw_status
+                      if s not in ["nan", "None", ""]
+                  ]
+              )
+          )
+      )
+      status_list.extend(unique_status)
+    selected_status = st.radio(
+        "활약도 선택", status_list, horizontal=True, label_visibility="collapsed"
+    )
 
 st.markdown("---")
 
