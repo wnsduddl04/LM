@@ -9,17 +9,18 @@ st.set_page_config(
 )
 
 
-# 1. 데이터 불러오기
+# 1. 데이터 불러오기 (태국어 및 중국어 한자 완벽 지원을 위한 인코딩 순서 적용)
 @st.cache_data
 def load_data():
-  for encoding in ["cp949", "utf-8", "latin1"]:
+  # 다국어(태국어, 중국어) 처리를 위해 utf-8을 최우선으로 시도합니다.
+  for encoding in ["utf-8-sig", "utf-8", "cp949", "latin1"]:
     try:
       df = pd.read_csv("members.csv", encoding=encoding)
       # 모든 텍스트 열의 앞뒤 공백 제거
       for col in df.select_dtypes(include=["object"]).columns:
         df[col] = df[col].astype(str).str.strip()
       return df
-    except:
+    except Exception:
       continue
   return pd.DataFrame()
 
@@ -30,7 +31,7 @@ df = load_data()
 COL_NAME = "이름"  # A열
 COL_CORPS = "군단명"
 COL_POWER = "전투력"
-COL_STATUS = "접속률"  # 스크린샷 상 활약도/접속률 데이터가 들어있는 실제 컬럼명
+COL_STATUS = "접속률"  # 활약도/접속률 데이터 컬럼
 COL_LEADER = "군단장"  # G열 ("팀장"이라고 적혀있는 곳)
 
 # 제목 설정
@@ -52,7 +53,9 @@ st.markdown("---")
 corps_list = ["전체"]
 if COL_CORPS in df.columns:
   unique_corps = df[COL_CORPS].dropna().unique().tolist()
-  corps_list.extend([str(c) for c in unique_corps if str(c) != "nan" and str(c) != "None"])
+  corps_list.extend(
+      [str(c) for c in unique_corps if str(c) != "nan" and str(c) != "None"]
+  )
 
 selected_corps = st.radio(
     "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
@@ -114,7 +117,9 @@ if selected_corps != "전체":
   st.markdown(f"### 🚩 [{selected_corps}] 현황 정보")
 
   # 해당 군단에 속한 전체 행들
-  corps_all_df = df[df[COL_CORPS].astype(str).str.strip() == str(selected_corps).strip()]
+  corps_all_df = df[
+      df[COL_CORPS].astype(str).str.strip() == str(selected_corps).strip()
+  ]
 
   col1, col2 = st.columns(2)
 
@@ -124,10 +129,14 @@ if selected_corps != "전체":
       leader_rows = corps_all_df[
           corps_all_df[COL_LEADER].astype(str).str.strip() == "팀장"
       ]
-      
+
       if not leader_rows.empty:
         leader_names = leader_rows[COL_NAME].dropna().astype(str).tolist()
-        leader_str = ", ".join(sorted(list(set(leader_names)))) if leader_names else "팀장 지정 없음"
+        leader_str = (
+            ", ".join(sorted(list(set(leader_names))))
+            if leader_names
+            else "팀장 지정 없음"
+        )
       else:
         leader_str = "등록된 팀장 없음"
 
