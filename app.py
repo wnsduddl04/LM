@@ -427,24 +427,21 @@ with col_f1:
   # 군단 목록 우선순위 정렬 (1군단~5군단 먼저, 나머지는 뒤에 추가)
   corps_list = ["전체"]
   if COL_CORPS in df.columns:
-    raw_corps = (
-        df[COL_CORPS].dropna().astype(str).unique().tolist()
-    )
-    cleaned_corps = [
-        str(c).strip() for c in raw_corps if str(c) not in ["nan", "None", ""]
-    ]
+    raw_corps = df[COL_CORPS].dropna().astype(str).tolist()
+    cleaned_corps = []
+    for c in raw_corps:
+      c_str = c.strip()
+      if c_str not in ["nan", "None", ""] and c_str not in cleaned_corps:
+        cleaned_corps.append(c_str)
 
-    # 기본 우선순위 정의 (1군단 ~ 5군단)
     preferred_order = ["1군단", "2군단", "3군단", "4군단", "5군단"]
     sorted_corps = []
 
-    # 1~5군단이 데이터에 있으면 지정된 순서대로 먼저 추가
     for p in preferred_order:
       if p in cleaned_corps:
         sorted_corps.append(p)
         cleaned_corps.remove(p)
 
-    # 나머지 항목(예: 접음 등)은 이름순 또는 등장 순서대로 뒤에 배치
     sorted_corps.extend(sorted(cleaned_corps))
     corps_list.extend(sorted_corps)
 
@@ -480,9 +477,11 @@ with col_f2:
   target_status_col = COL_STATUS if COL_STATUS in df.columns else "활약도"
   if target_status_col in df.columns:
     raw_status = df[target_status_col].dropna().astype(str).tolist()
-    cleaned_status = list(
-        set([s.strip() for s in raw_status if s not in ["nan", "None", ""]])
-    )
+    cleaned_status = []
+    for s in raw_status:
+      s_str = s.strip()
+      if s_str not in ["nan", "None", ""] and s_str not in cleaned_status:
+        cleaned_status.append(s_str)
 
     # 지정된 활약도 기준 순서 정의
     status_order = [
@@ -500,7 +499,7 @@ with col_f2:
         sorted_status.append(s)
         cleaned_status.remove(s)
 
-    # 기준에 없는 기타 활약도 항목이 있다면 뒤에 추가
+    # 기준에 없는 기타 항목이 있다면 뒤에 추가
     sorted_status.extend(sorted(cleaned_status))
     status_list.extend(sorted_status)
 
