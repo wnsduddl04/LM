@@ -165,8 +165,6 @@ button[data-testid="stPopoverButton"]:hover {{
 )
 
 # 세션 상태 초기화
-if "uploaded_df" not in st.session_state:
-  st.session_state.uploaded_df = None
 if "update_time" not in st.session_state:
   st.session_state.update_time = None
 if "uploader_key" not in st.session_state:
@@ -185,32 +183,30 @@ with st.popover("📁 데이터 및 파일 관리"):
 
   if uploaded_file is not None:
     try:
-      df_temp = pd.read_excel(uploaded_file)
-      for col in df_temp.select_dtypes(include=["object"]).columns:
-        df_temp[col] = df_temp[col].astype(str).str.strip()
+      # 업로드된 파일을 서버의 'members.xlsx'로 직접 저장 (덮어쓰기)
+      with open("members.xlsx", "wb") as f:
+        f.write(uploaded_file.getbuffer())
 
-      st.session_state.uploaded_df = df_temp
       st.session_state.update_time = datetime.now().strftime(
           "%Y-%m-%d %H:%M:%S"
       )
       st.session_state.uploader_key += 1
-      st.success("✨ 데이터가 성공적으로 갱신되었습니다!")
+      st.success(
+          "✨ 데이터가 서버에 영구 갱신(저장)되었습니다! 새로고침해도 유지됩니다."
+      )
       st.rerun()
     except Exception as e:
-      st.error(f"❌ 파일 읽기 오류: {e}")
+      st.error(f"❌ 파일 저장 오류: {e}")
 
-  # 현재 데이터 다운로드 준비
+  # 현재 데이터 다운로드 준비 (서버에 저장된 members.xlsx 우선 로드)
   temp_df = None
-  if st.session_state.uploaded_df is not None:
-    temp_df = st.session_state.uploaded_df
-  else:
-    try:
-      if os.path.exists("members.xlsx"):
-        temp_df = pd.read_excel("members.xlsx")
-      elif os.path.exists("members.csv"):
-        temp_df = pd.read_csv("members.csv")
-    except Exception:
-      temp_df = None
+  try:
+    if os.path.exists("members.xlsx"):
+      temp_df = pd.read_excel("members.xlsx")
+    elif os.path.exists("members.csv"):
+      temp_df = pd.read_csv("members.csv")
+  except Exception:
+    temp_df = None
 
   if temp_df is not None and not temp_df.empty:
     output = io.BytesIO()
@@ -266,8 +262,9 @@ with st.popover("📁 데이터 및 파일 관리"):
     st.warning("⚠️ `assets/서책상담.xlsx` 파일을 찾을 수 없습니다.")
 
 
-# --- 1. 데이터 불러오기 ---
-def load_default_data():
+# --- 1. 데이터 불러오기 (서버에 저장된 members.xlsx 영구 반영) ---
+@st.cache_data(ttl=5)  # 캐시를 짧게 유지하여 최신 파일 바로 반영
+def load_data():
   try:
     if os.path.exists("members.xlsx"):
       df = pd.read_excel("members.xlsx")
@@ -288,10 +285,7 @@ def load_default_data():
     return pd.DataFrame()
 
 
-if st.session_state.uploaded_df is not None:
-  df = st.session_state.uploaded_df
-else:
-  df = load_default_data()
+df = load_data()
 
 # 컬럼 정의
 COL_NAME = "이름"
@@ -483,17 +477,22 @@ with col_f2:
       if s_str not in ["nan", "None", ""] and s_str not in cleaned_status:
         cleaned_status.append(s_str)
 
-    # 지정된 활약도 기준 순서 정의
+    # 지정된 활약도 기준 순서 정의 (공백 및 텍스트 정확히 매칭)
     status_order = [
         "굉장한 활약",
+        "굉장한활약",
         "매우 활약",
+        "매우활약",
         "활약",
         "활약 저조",
+        "활약저조",
         "미활약",
         "활약 매우 저조",
+        "활약매우저조",
     ]
     sorted_status = []
 
+    # 순서 목록에 있는 항목 먼저 담기
     for s in status_order:
       if s in cleaned_status:
         sorted_status.append(s)
@@ -600,7 +599,7 @@ search_msg = (
 
 st.markdown(
     f"<p style='color: #ffffff; font-size: 1.05rem; text-shadow: 1px 1px 2px"
-    f" rgba(0,0,0,0.8);'><b>표시 중인 주군{search_msg}:</b>"
+    f" rgba(0,0,0,0.8);<b>표시 중인 주군{search_msg}:</b>"
     f" <span style='color:#ffd700; font-weight:bold;'>{displayed_count}명</span>"
     f" (전체 {total_count}명)</p>",
     unsafe_allow_html=True,
