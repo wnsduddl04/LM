@@ -130,7 +130,7 @@ button[data-testid="stPopoverButton"]:hover {{
     unsafe_allow_html=True,
 )
 
-# --- 📁 데이터, 매크로 및 서책 상담 양식 관리 팝오버 메뉴 ---
+# --- 📁 데이터 및 파일 관리 팝오버 메뉴 ---
 with st.popover("📁 데이터 및 파일 관리"):
   st.markdown("### 📊 연맹원 명단 현황판 관리 (.xlsx)")
   uploaded_file = st.file_uploader(
@@ -165,16 +165,9 @@ with st.popover("📁 데이터 및 파일 관리"):
   st.markdown("---")
 
   st.markdown("### 🛠️ 서책계산기 매크로 파일 (.xlsm)")
-  uploaded_xlsm = st.file_uploader(
-      "매크로 파일 업로드 (서책계산기.xlsm)", type=["xlsm"]
-  )
-  if uploaded_xlsm is not None:
-    with open("서책계산기.xlsm", "wb") as f:
-      f.write(uploaded_xlsm.getbuffer())
-    st.success("✨ '서책계산기.xlsm' 파일이 업로드되었습니다!")
-
-  if os.path.exists("서책계산기.xlsm"):
-    with open("서책계산기.xlsm", "rb") as f:
+  xlsm_path = "assets/서책계산기.xlsm"
+  if os.path.exists(xlsm_path):
+    with open(xlsm_path, "rb") as f:
       xlsm_bytes = f.read()
     st.download_button(
         label="📥 서책계산기 다운로드 (서책계산기.xlsm)",
@@ -183,23 +176,14 @@ with st.popover("📁 데이터 및 파일 관리"):
         mime="application/vnd.ms-excel.sheet.macroEnabled.12",
     )
   else:
-    st.info(
-        "ℹ️ 서버에 '서책계산기.xlsm' 파일이 없습니다. 파일을 업로드해주세요."
-    )
+    st.warning("⚠️ `assets/서책계산기.xlsm` 파일을 찾을 수 없습니다.")
 
   st.markdown("---")
 
   st.markdown("### 📋 서책 상담 양식 파일 (.xlsx)")
-  uploaded_consult = st.file_uploader(
-      "서책 상담 양식 업로드 (서책상담.xlsx)", type=["xlsx"]
-  )
-  if uploaded_consult is not None:
-    with open("서책상담.xlsx", "wb") as f:
-      f.write(uploaded_consult.getbuffer())
-    st.success("✨ '서책상담.xlsx' 양식 파일이 업로드되었습니다!")
-
-  if os.path.exists("서책상담.xlsx"):
-    with open("서책상담.xlsx", "rb") as f:
+  consult_path = "assets/서책상담.xlsx"
+  if os.path.exists(consult_path):
+    with open(consult_path, "rb") as f:
       consult_bytes = f.read()
     st.download_button(
         label="📥 서책 상담 양식 다운로드 (서책상담.xlsx)",
@@ -210,7 +194,7 @@ with st.popover("📁 데이터 및 파일 관리"):
         ),
     )
   else:
-    st.info("ℹ️ 서버에 '서책상담.xlsx' 양식 파일이 없습니다. 업로드해주세요.")
+    st.warning("⚠️ `assets/서책상담.xlsx` 파일을 찾을 수 없습니다.")
 
 
 # --- 1. 데이터 불러오기 (.xlsx 우선) ---
@@ -310,7 +294,6 @@ if search_query and search_query.strip():
           str(row.get(COL_LEADER, "")) if COL_LEADER in df.columns else ""
       )
 
-      # 팀장 배지 HTML 생성
       leader_badge = (
           f'<span style="background-color: #d4af37; color: #0f172a; padding:'
           f' 2px 8px; border-radius: 6px; font-size: 0.85rem; font-weight:'
@@ -356,7 +339,6 @@ st.markdown(
 
 col_f1, col_f2 = st.columns(2)
 
-# 군단 필터
 with col_f1:
   st.markdown(
       "<p class='filter-title' style='color:#ffd700; font-size:1.15rem;"
@@ -374,7 +356,6 @@ with col_f1:
       "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
   )
 
-# 활약도 필터
 with col_f2:
   st.markdown(
       "<p class='filter-title' style='color:#ffd700; font-size:1.15rem;"
@@ -404,7 +385,7 @@ with col_f2:
 
 st.markdown("---")
 
-# --- 7. 최종 필터 적용 (군단 + 활약도) ---
+# --- 7. 최종 필터 적용 ---
 if selected_corps != "전체" and COL_CORPS in filtered_df.columns:
   filtered_df = filtered_df[
       filtered_df[COL_CORPS].astype(str).str.strip()
