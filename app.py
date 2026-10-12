@@ -7,20 +7,49 @@ st.set_page_config(page_title="연맹원 군단별 나눔 현황", page_icon="�
 st.title("🛡️ 연맹원 군단별 나눔 현황판")
 st.markdown("연맹원 명단과 나눔 현황을 실시간으로 확인하는 페이지입니다.")
 
+# 📁 데이터 관리 (CSV 업로드 / 다운로드 버튼)
+with st.popover("📁 데이터 관리 (업로드 / 다운로드)"):
+    st.markdown("### 데이터 관리 메뉴")
+    
+    # 파일 업로드 기능
+    uploaded_file = st.file_uploader("CSV 파일 업로드 (members.csv)", type=["csv"])
+    
+    st.markdown("---")
+    
+    # 다운로드를 위한 데이터 준비
+    try:
+        if uploaded_file is not None:
+            temp_df = pd.read_csv(uploaded_file)
+        else:
+            temp_df = pd.read_csv("members.csv")
+    except Exception:
+        temp_df = None
+        
+    if temp_df is not None and not temp_df.empty:
+        csv_data = temp_df.to_csv(index=False).encode('utf-8-sig')
+        st.download_button(
+            label="📥 현재 현황 CSV 다운로드",
+            data=csv_data,
+            file_name="members.csv",
+            mime="text/csv"
+        )
+
 # 2. 데이터 불러오기 함수 (캐시를 사용하여 빠르게 로드)
 @st.cache_data(ttl=10) # 10초마다 데이터 새로고침
-def load_data():
+def load_data(file):
     try:
-        # 엑셀/구글시트를 CSV로 저장한 파일명
-        df = pd.read_csv("members.csv")
+        if file is not None:
+            df = pd.read_csv(file)
+        else:
+            df = pd.read_csv("members.csv")
         return df
     except FileNotFoundError:
         return None
 
-df = load_data()
+df = load_data(uploaded_file)
 
 if df is not None and not df.empty:
-    # 3. 검색 및 필터 기능 추가
+    # 3. 검색 및 필터 기능 추가 (원래 코드의 검색 기능 복원)
     search_name = st.text_input("🔍 연맹원 이름 검색", "")
     if search_name:
         df = df[df['이름'].str.contains(search_name, na=False)]
