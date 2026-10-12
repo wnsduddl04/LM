@@ -29,7 +29,7 @@ bg_style = (
     else "url('https://raw.githubusercontent.com/7aab/your-repo/main/assets/bg_palace.webp')"
 )
 
-# --- 🎨 삼국지 게임풍 테마 CSS ---
+# --- 🎨 삼국지 게임풍 테마 CSS (마우스 오버 툴팁 포함) ---
 st.markdown(
     f"""
 <style>
@@ -61,22 +61,14 @@ st.markdown(
     margin: 0;
 }}
 
-/* 3. 검색 결과 및 활약도 기준 안내 박스 스타일 */
-.search-result-box, .guide-box {{
+/* 3. 검색 결과 카드 박스 스타일 */
+.search-result-box {{
     background: rgba(15, 23, 42, 0.95);
     border: 2px solid rgba(212, 175, 55, 0.7);
     border-radius: 12px;
     padding: 16px 20px;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
     margin-bottom: 12px;
-}}
-
-.guide-box {{
-    border-color: rgba(212, 175, 55, 0.4);
-    font-size: 0.9rem;
-    color: #e2e8f0;
-    margin-top: 15px;
-    margin-bottom: 20px;
 }}
 
 /* 4. 라디오 버튼 내부 텍스트 크기 및 가독성 설정 */
@@ -95,7 +87,7 @@ div[data-testid="stDataFrame"] {{
     padding: 8px;
 }}
 
-/* 5. 팝오버 버튼 가시성 확보 (배경색 및 금색 테두리 고정) */
+/* 5. 팝오버 버튼 가시성 확보 */
 button[data-testid="stPopoverButton"] {{
     background-color: rgba(15, 23, 42, 0.95) !important;
     border: 2px solid rgba(212, 175, 55, 0.9) !important;
@@ -107,6 +99,43 @@ button[data-testid="stPopoverButton"]:hover {{
     background-color: rgba(30, 41, 59, 1) !important;
     border-color: #ffd700 !important;
     color: #ffffff !important;
+}}
+
+/* 6. 활약도 필터 마우스 오버 툴팁 (메모 박스 스타일) */
+.tooltip-container {{
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    color: #ffd700;
+    font-weight: 800;
+    font-size: 1.15rem;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+}}
+
+.tooltip-container .tooltip-text {{
+    visibility: hidden;
+    width: 270px;
+    background-color: rgba(15, 23, 42, 0.95);
+    color: #e2e8f0;
+    text-align: left;
+    border-radius: 8px;
+    border: 1.5px solid rgba(212, 175, 55, 0.8);
+    padding: 10px 12px;
+    position: absolute;
+    z-index: 99;
+    bottom: 125%;
+    left: 0;
+    font-size: 0.85rem;
+    font-weight: normal;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.8);
+    opacity: 0;
+    transition: opacity 0.2s;
+    line-height: 1.5;
+}}
+
+.tooltip-container:hover .tooltip-text {{
+    visibility: visible;
+    opacity: 1;
 }}
 
 /* ==========================================
@@ -128,10 +157,6 @@ button[data-testid="stPopoverButton"]:hover {{
     
     div[data-testid="stRadio"] label p {{
         font-size: 0.95rem !important;
-    }}
-    
-    .filter-title {{
-        font-size: 1rem !important;
     }}
 }}
 </style>
@@ -165,11 +190,11 @@ with st.popover("📁 데이터 및 파일 관리"):
         df_temp[col] = df_temp[col].astype(str).str.strip()
 
       st.session_state.uploaded_df = df_temp
-      # 실시간 시·분·초까지 정확하게 갱신되도록 반영
+      # 업로드 시점의 정확한 시각을 동적으로 갱신
       st.session_state.update_time = datetime.now().strftime(
           "%Y-%m-%d %H:%M:%S"
       )
-      st.session_state.uploader_key += 1  # 업로더 위젯 초기화용 키 증가
+      st.session_state.uploader_key += 1
       st.success("✨ 데이터가 성공적으로 갱신되었습니다!")
       st.rerun()
     except Exception as e:
@@ -242,7 +267,7 @@ with st.popover("📁 데이터 및 파일 관리"):
     st.warning("⚠️ `assets/서책상담.xlsx` 파일을 찾을 수 없습니다.")
 
 
-# --- 1. 데이터 불러오기 (.xlsx 우선) ---
+# --- 1. 데이터 불러오기 ---
 def load_default_data():
   try:
     if os.path.exists("members.xlsx"):
@@ -264,7 +289,6 @@ def load_default_data():
     return pd.DataFrame()
 
 
-# 데이터 결정 (업로드된 데이터 우선 사용)
 if st.session_state.uploaded_df is not None:
   df = st.session_state.uploaded_df
 else:
@@ -290,7 +314,6 @@ with col_logo:
   else:
     st.title("🛡️")
 
-# 최종 업로드 갱신 시간 (시·분·초 포함) 표시 문자열 구성
 time_str = (
     f" | <span style='color: #4fe3c1;'>최종 갱신: {st.session_state.update_time}</span>"
     if st.session_state.update_time
@@ -396,9 +419,9 @@ col_f1, col_f2 = st.columns(2)
 
 with col_f1:
   st.markdown(
-      "<p class='filter-title' style='color:#ffd700; font-size:1.15rem;"
-      " font-weight:800; margin-bottom:5px; text-shadow: 1px 1px 3px"
-      " rgba(0,0,0,0.8);'>🚩 군단 필터</p>",
+      "<p style='color:#ffd700; font-size:1.15rem; font-weight:800;"
+      " margin-bottom:5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);'>🚩"
+      " 군단 필터</p>",
       unsafe_allow_html=True,
   )
   corps_list = ["전체"]
@@ -416,12 +439,25 @@ with col_f1:
   )
 
 with col_f2:
+  # 활약도 필터 타이틀에 마우스 오버 툴팁(메모 박스) 적용
   st.markdown(
-      "<p class='filter-title' style='color:#ffd700; font-size:1.15rem;"
-      " font-weight:800; margin-bottom:5px; text-shadow: 1px 1px 3px"
-      " rgba(0,0,0,0.8);'>🔥 활약도(접속률) 필터</p>",
+      """
+    <div class="tooltip-container">
+        🔥 활약도(접속률) 필터 ⓘ
+        <span class="tooltip-text">
+            <b>[활약도 기준 안내]</b><br>
+            • <b>굉장한 활약</b>: 7일 내 7일 접속<br>
+            • <b>매우 활약</b>: 7일 내 5일 이상 접속<br>
+            • <b>활약</b>: 7일 내 3일 이상 접속<br>
+            • <b>활약 저조</b>: 7일 내 1일 이상 접속<br>
+            • <b>미활약</b>: 7일 내 접속<br>
+            • <b>활약 매우 저조</b>: 7일 이상 미접속
+        </span>
+    </div>
+    """,
       unsafe_allow_html=True,
   )
+
   status_list = ["전체 활약"]
   target_status_col = COL_STATUS if COL_STATUS in df.columns else "활약도"
   if target_status_col in df.columns:
@@ -445,22 +481,6 @@ with col_f2:
       label_visibility="collapsed",
       key="status_radio",
   )
-
-# --- 📌 활약도 기준 안내 박스 추가 ---
-st.markdown(
-    """
-<div class="guide-box">
-    <b>💡 [활약도 기준 안내]</b><br>
-    • <span style="color: #ffd700;">굉장한 활약</span>: 7일 내 7일 접속 &nbsp;|&nbsp; 
-    • <span style="color: #4fe3c1;">매우 활약</span>: 7일 내 5일 이상 접속 &nbsp;|&nbsp; 
-    • <span style="color: #ffffff;">활약</span>: 7일 내 3일 이상 접속<br>
-    • <span style="color: #cbd5e0;">활약 저조</span>: 7일 내 1일 이상 접속 &nbsp;|&nbsp; 
-    • <span style="color: #f6ad55;">미활약</span>: 7일 내 접속 &nbsp;|&nbsp; 
-    • <span style="color: #ef4444;">활약 매우 저조</span>: 7일 이상 미접속
-</div>
-""",
-    unsafe_allow_html=True,
-)
 
 st.markdown("---")
 
