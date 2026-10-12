@@ -131,27 +131,40 @@ button[data-testid="stPopoverButton"]:hover {{
     unsafe_allow_html=True,
 )
 
-# 세션 상태에 업로드된 데이터와 마지막 업데이트 시간 저장
+# 세션 상태 초기화
 if "uploaded_df" not in st.session_state:
   st.session_state.uploaded_df = None
 if "update_time" not in st.session_state:
   st.session_state.update_time = None
+if "uploader_key" not in st.session_state:
+  st.session_state.uploader_key = 0
+
 
 # --- 📁 데이터 및 파일 관리 팝오버 메뉴 ---
 with st.popover("📁 데이터 및 파일 관리"):
   st.markdown("### 📊 연맹원 명단 현황판 관리 (.xlsx)")
+
+  # 파일 업로더 (업로드 시 키 값을 바꿔서 위젯을 깨끗하게 초기화)
   uploaded_file = st.file_uploader(
-      "현황판 엑셀 업로드 (members.xlsx)", type=["xlsx", "xls"]
+      "현황판 엑셀 업로드 (members.xlsx)",
+      type=["xlsx", "xls"],
+      key=f"uploader_{st.session_state.uploader_key}",
   )
 
   if uploaded_file is not None:
     try:
-      st.session_state.uploaded_df = pd.read_excel(uploaded_file)
+      df_temp = pd.read_excel(uploaded_file)
+      for col in df_temp.select_dtypes(include=["object"]).columns:
+        df_temp[col] = df_temp[col].astype(str).str.strip()
+
+      st.session_state.uploaded_df = df_temp
       st.session_state.update_time = datetime.now().strftime(
           "%Y-%m-%d %H:%M:%S"
       )
+      # 업로더 위젯 키를 변경하여 화면에서 업로드된 파일 박스를 즉시 제거
+      st.session_state.uploader_key += 1
       st.success("✨ 데이터가 성공적으로 갱신되었습니다!")
-      st.rerun()  # 화면을 즉시 갱신하여 업로드창 흔적을 깔끔하게 숨김
+      st.rerun()
     except Exception as e:
       st.error(f"❌ 파일 읽기 오류: {e}")
 
@@ -223,7 +236,6 @@ with st.popover("📁 데이터 및 파일 관리"):
 
 
 # --- 1. 데이터 불러오기 (.xlsx 우선) ---
-@st.cache_data
 def load_default_data():
   try:
     if os.path.exists("members.xlsx"):
@@ -245,7 +257,7 @@ def load_default_data():
     return pd.DataFrame()
 
 
-# 세션에 업로드된 데이터가 있으면 그것을 쓰고, 없으면 기본 파일 로드
+# 데이터 결정 (세션에 업로드된 데이터가 있으면 우선 사용)
 if st.session_state.uploaded_df is not None:
   df = st.session_state.uploaded_df
 else:
@@ -271,7 +283,7 @@ with col_logo:
   else:
     st.title("🛡️")
 
-# 마지막 업데이트 시간 표시 텍스트 생성
+# 최종 업로드 갱신 시간 표시 구성
 time_str = (
     f" | <span style='color: #4fe3c1;'>최종 갱신: {st.session_state.update_time}</span>"
     if st.session_state.update_time
@@ -389,7 +401,11 @@ with col_f1:
         [str(c) for c in unique_corps if str(c) not in ["nan", "None"]]
     )
   selected_corps = st.radio(
-      "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
+      "군단 선택",
+      corps_list,
+      horizontal=True,
+      label_visibility="collapsed",
+      key="corps_radio",
   )
 
 with col_f2:
@@ -416,7 +432,11 @@ with col_f2:
     )
     status_list.extend(unique_status)
   selected_status = st.radio(
-      "활약도 선택", status_list, horizontal=True, label_visibility="collapsed"
+      "활약도 선택",
+      status_list,
+      horizontal=True,
+      label_visibility="collapsed",
+      key="status_radio",
   )
 
 st.markdown("---")
