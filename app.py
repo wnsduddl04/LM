@@ -86,8 +86,8 @@ div[data-testid="stDataFrame"] {{
 }}
 
 /* ==========================================
-   📱 모바일 화면 최적화 (화면 너비 768px 이하)
-   ========================================== */
+    📱 모바일 화면 최적화 (화면 너비 768px 이하)
+    ========================================== */
 @media screen and (max-width: 768px) {{
     .main-header {{
         padding: 12px;
@@ -115,13 +115,49 @@ div[data-testid="stDataFrame"] {{
     unsafe_allow_html=True,
 )
 
+# --- 📁 데이터 관리 팝오버 메뉴 (엑셀/CSV 업로드 및 다운로드) ---
+with st.popover("📁 데이터 관리 (업로드 / 다운로드)"):
+  st.markdown("### 📊 데이터 관리 메뉴")
+  uploaded_file = st.file_uploader(
+      "새로운 데이터 파일 업로드 (csv)", type=["csv"]
+  )
+
+  st.markdown("---")
+
+  # 현재 데이터 다운로드 준비
+  try:
+    if uploaded_file is not None:
+      temp_df = pd.read_csv(uploaded_file)
+    else:
+      for encoding in ["utf-8-sig", "cp949", "utf-8", "latin1"]:
+        try:
+          temp_df = pd.read_csv("members.csv", encoding=encoding)
+          break
+        except Exception:
+          temp_df = None
+  except Exception:
+    temp_df = None
+
+  if temp_df is not None and not temp_df.empty:
+    csv_data = temp_df.to_csv(index=False).encode("utf-8-sig")
+    st.download_button(
+        label="📥 현재 현황 파일 다운로드",
+        data=csv_data,
+        file_name="members.csv",
+        mime="text/csv",
+    )
+
 
 # --- 1. 데이터 불러오기 ---
 @st.cache_data
-def load_data():
+def load_data(file):
   for encoding in ["utf-8-sig", "cp949", "utf-8", "latin1"]:
     try:
-      df = pd.read_csv("members.csv", encoding=encoding)
+      if file is not None:
+        df = pd.read_csv(file, encoding=encoding)
+      else:
+        df = pd.read_csv("members.csv", encoding=encoding)
+
       for col in df.select_dtypes(include=["object"]).columns:
         df[col] = df[col].astype(str).str.strip()
       return df
@@ -130,7 +166,7 @@ def load_data():
   return pd.DataFrame()
 
 
-df = load_data()
+df = load_data(uploaded_file)
 
 # 컬럼 정의
 COL_NAME = "이름"
@@ -147,246 +183,4 @@ col_logo, col_text = st.columns([1, 4])
 with col_logo:
   if os.path.exists("assets/icon_warrior.png"):
     st.image("assets/icon_warrior.png", width=90)
-  elif os.path.exists("assets/logo_moon.png"):
-    st.image("assets/logo_moon.png", width=90)
-  else:
-    st.title("🛡️")
-
-with col_text:
-  st.markdown("""
-        <div class="main-header">
-            <h1 class="header-title">🌙 LUCKY MOON 럭키문 연맹</h1>
-            <p style="color: #e2e8f0; font-size: 1.05rem; margin-top: 5px; margin-bottom: 0;">전투력별 군단 나눔 및 연맹원 실시간 관리 현황판</p>
-        </div>
-    """, unsafe_allow_html=True)
-
-
-# --- 3. 검색 및 필터 UI ---
-search_query = st.text_input(
-    "🔍 연맹원 이름 검색",
-    placeholder="찾고자 하는 주군의 이름을 적어주세요",
-    label_visibility="collapsed",
-)
-
-
-# --- 4. 데이터 필터링 미리 계산 ---
-filtered_df = df.copy()
-
-if search_query and COL_NAME in filtered_df.columns:
-  filtered_df = filtered_df[
-      filtered_df[COL_NAME].astype(str).str.contains(search_query, na=False)
-  ]
-
-
-# --- 5. 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 ---
-if search_query and search_query.strip():
-  st.markdown(
-      f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
-      f" rgba(0,0,0,0.8); margin-top: 10px;'>🔍 '{search_query}' 실시간 검색"
-      " 결과</h2>",
-      unsafe_allow_html=True,
-  )
-
-  if not filtered_df.empty:
-    for _, row in filtered_df.iterrows():
-      name = row.get(COL_NAME, "이름 없음")
-      corps = row.get(COL_CORPS, "소속 없음")
-      power = row.get(COL_POWER, "정보 없음")
-      status = (
-          row.get(COL_STATUS, "정보 없음")
-          if COL_STATUS in df.columns
-          else row.get("활약도", "정보 없음")
-      )
-      leader = (
-          str(row.get(COL_LEADER, "")) if COL_LEADER in df.columns else ""
-      )
-
-      # 팀장 배지 HTML 생성 (안전한 단일 라인 처리)
-      leader_badge = (
-          f'<span style="background-color: #d4af37; color: #0f172a; padding:'
-          f' 2px 8px; border-radius: 6px; font-size: 0.85rem; font-weight:'
-          f' bold; margin-left: 8px;">{leader}</span>'
-          if leader and leader not in ["nan", "None", "", "일반"]
-          else ""
-      )
-
-      # HTML 태그 노출 방지를 위해 한 줄로 완벽히 결합된 카드 컴포넌트
-      card_html = (
-          '<div class="search-result-box"><div style="display: flex;'
-          " justify-content: space-between; align-items: center; flex-wrap:"
-          ' wrap; gap: 10px;"><div><span style="color: #ffffff; font-size:'
-          f' 1.25rem; font-weight: 900;">🛡️ {name}</span><span style="color:'
-          ' #ffd700; font-size: 1.1rem; font-weight: bold; margin-left:'
-          f' 8px;">[{corps}]</span>{leader_badge}</div><div><span style="color:'
-          ' #cbd5e0; font-size: 0.95rem;">전투력:</span> <span style="color:'
-          ' #4fe3c1; font-size: 1.1rem; font-weight: bold; margin-right:'
-          f' 8px;">{power}</span><span style="color: #cbd5e0; font-size:'
-          ' 0.95rem;">활약도:</span> <span style="color: #ffffff; font-size:'
-          f' 1.1rem; font-weight: bold;">{status}</span></div></div></div>'
-      )
-      st.markdown(card_html, unsafe_allow_html=True)
-  else:
-    st.markdown(
-        f"""
-        <div class="search-result-box" style="border-color: #ef4444;">
-            <div style="color: #ef4444; font-size: 1.1rem; font-weight: bold; text-align: center;">
-                ❌ '{search_query}'에 해당하는 주군이 없습니다.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-  st.markdown("<br>", unsafe_allow_html=True)
-
-
-# --- 6. 군단 및 활약도 선택 필터 ---
-st.markdown(
-    "<h3 style='color: #ffd700; margin-top: 10px; font-size: 1.3rem;"
-    " text-shadow: 2px 2px 4px rgba(0,0,0,0.8);'>⚔️ 군단 및 활약도 선택</h3>",
-    unsafe_allow_html=True,
-)
-
-col_f1, col_f2 = st.columns(2)
-
-# 군단 필터
-with col_f1:
-  st.markdown(
-      "<p class='filter-title' style='color:#ffd700; font-size:1.15rem;"
-      " font-weight:800; margin-bottom:5px; text-shadow: 1px 1px 3px"
-      " rgba(0,0,0,0.8);'>🚩 군단 필터</p>",
-      unsafe_allow_html=True,
-  )
-  corps_list = ["전체"]
-  if COL_CORPS in df.columns:
-    unique_corps = df[COL_CORPS].dropna().unique().tolist()
-    corps_list.extend(
-        [str(c) for c in unique_corps if str(c) not in ["nan", "None"]]
-    )
-  selected_corps = st.radio(
-      "군단 선택", corps_list, horizontal=True, label_visibility="collapsed"
-  )
-
-# 활약도 필터
-with col_f2:
-  st.markdown(
-      "<p class='filter-title' style='color:#ffd700; font-size:1.15rem;"
-      " font-weight:800; margin-bottom:5px; text-shadow: 1px 1px 3px"
-      " rgba(0,0,0,0.8);'>🔥 활약도(접속률) 필터</p>",
-      unsafe_allow_html=True,
-  )
-  status_list = ["전체 활약"]
-  target_status_col = COL_STATUS if COL_STATUS in df.columns else "활약도"
-  if target_status_col in df.columns:
-    raw_status = df[target_status_col].dropna().astype(str).tolist()
-    unique_status = sorted(
-        list(
-            set(
-                [
-                    s.strip()
-                    for s in raw_status
-                    if s not in ["nan", "None", ""]
-                ]
-            )
-        )
-    )
-    status_list.extend(unique_status)
-  selected_status = st.radio(
-      "활약도 선택", status_list, horizontal=True, label_visibility="collapsed"
-  )
-
-st.markdown("---")
-
-# --- 7. 최종 필터 적용 (군단 + 활약도) ---
-if selected_corps != "전체" and COL_CORPS in filtered_df.columns:
-  filtered_df = filtered_df[
-      filtered_df[COL_CORPS].astype(str).str.strip()
-      == str(selected_corps).strip()
-  ]
-
-if selected_status != "전체 활약" and target_status_col in filtered_df.columns:
-  filtered_df = filtered_df[
-      filtered_df[target_status_col].astype(str).str.strip()
-      == str(selected_status).strip()
-  ]
-
-
-# --- 8. 특정 군단 선택 시 요약 카드 ---
-if selected_corps != "전체":
-  st.markdown(
-      f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
-      f" rgba(0,0,0,0.8);'>🚩 [{selected_corps}] 군단 현황 요약</h2>",
-      unsafe_allow_html=True,
-  )
-
-  corps_all_df = df[
-      df[COL_CORPS].astype(str).str.strip() == str(selected_corps).strip()
-  ]
-  card_col1, card_col2 = st.columns(2)
-
-  with card_col1:
-    leader_str = "등록된 팀장 없음"
-    if COL_LEADER in df.columns and COL_NAME in df.columns:
-      leader_rows = corps_all_df[
-          corps_all_df[COL_LEADER].astype(str).str.strip() == "팀장"
-      ]
-      if not leader_rows.empty:
-        leader_names = leader_rows[COL_NAME].dropna().astype(str).tolist()
-        leader_str = (
-            ", ".join(sorted(list(set(leader_names))))
-            if leader_names
-            else "팀장 지정 없음"
-        )
-
-    st.markdown(
-        f"""
-        <div class="search-result-box">
-            <div style="color: #cbd5e0; font-size: 1rem; font-weight: bold; margin-bottom: 6px;">👑 군단장 (팀장)</div>
-            <div style="color: #ffd700; font-size: 1.4rem; font-weight: 800;">{leader_str}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-  with card_col2:
-    total_power_str = "0"
-    if COL_POWER in df.columns:
-      power_series = pd.to_numeric(
-          corps_all_df[COL_POWER]
-          .astype(str)
-          .str.replace(",", "")
-          .str.replace("만", ""),
-          errors="coerce",
-      ).fillna(0)
-      total_power = power_series.sum()
-      total_power_str = f"{int(total_power):,}"
-
-    st.markdown(
-        f"""
-        <div class="search-result-box">
-            <div style="color: #cbd5e0; font-size: 1rem; font-weight: bold; margin-bottom: 6px;">⚔️ 군단 총 전투력 (인원: {len(corps_all_df)}명)</div>
-            <div style="color: #4fe3c1; font-size: 1.4rem; font-weight: 800;">{total_power_str}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-  st.markdown("<br>", unsafe_allow_html=True)
-
-
-# --- 9. 결과 표 출력 ---
-displayed_count = len(filtered_df)
-search_msg = (
-    f" (검색어: '{search_query}')"
-    if (search_query and search_query.strip())
-    else ""
-  )
-
-st.markdown(
-    f"<p style='color: #ffffff; font-size: 1.05rem; text-shadow: 1px 1px 2px"
-    f" rgba(0,0,0,0.8);'><b>표시 중인 주군{search_msg}:</b>"
-    f" <span style='color:#ffd700; font-weight:bold;'>{displayed_count}명</span>"
-    f" (전체 {total_count}명)</p>",
-    unsafe_allow_html=True,
-)
-
-st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+  elif os.path.
