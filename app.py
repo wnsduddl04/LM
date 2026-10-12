@@ -10,7 +10,7 @@ st.set_page_config(
 st.title("🛡️ 연맹원 군단별 나눔 현황판")
 st.markdown("연맹원 명단과 나눔 현황을 실시간으로 확인하는 페이지입니다.")
 
-# 📁 데이터 관리 버튼 (팝오버 메뉴형태로 업로드/다운로드 제공)
+# 📁 데이터 관리 버튼 (팝오버 메뉴 형태로 업로드/다운로드 제공)
 with st.popover("📁 데이터 관리 (CSV 업로드 / 다운로드)"):
   st.markdown("### 데이터 관리")
 
@@ -31,7 +31,6 @@ with st.popover("📁 데이터 관리 (CSV 업로드 / 다운로드)"):
     temp_df = None
 
   if temp_df is not None and not temp_df.empty:
-    # CSV 다운로드 변환
     csv_data = temp_df.to_csv(index=False).encode("utf-8-sig")
     st.download_button(
         label="📥 현재 현황 CSV 다운로드",
@@ -57,35 +56,25 @@ def load_data(file):
 df = load_data(uploaded_file)
 
 if df is not None and not df.empty:
-  st.markdown("---")
-
-  # 상단 필터 영역 (이름 검색 + 군단 선택 필터)
-  col1, col2 = st.columns([1, 1])
-
-  with col1:
-    search_name = st.text_input("🔍 연맹원 이름 검색", "")
-
-  with col2:
-    # 전체 군단 목록 추출
-    전체_군단 = list(df["군단명"].unique())
-    # 군단 필터 다중 선택 (기본값은 전체 선택)
-    selected_군단 = st.multiselect(
-        "🛡️ 군단 필터 (선택하지 않으면 전체 표시)",
-        전체_군단,
-        default=전체_군단,
-    )
-
-  # 이름 검색 필터 적용
+  # 원본과 동일한 흐름: 3. 검색 및 필터 기능
+  search_name = st.text_input("🔍 연맹원 이름 검색", "")
   if search_name:
     df = df[df["이름"].str.contains(search_name, na=False)]
 
-  # 군단 필터 적용
+  # 군단 필터 기능 추가 (전체 또는 특정 군단 선택)
+  전체_군단 = list(df["군단명"].unique())
+  selected_군단 = st.multiselect(
+      "🛡️ 군단 필터 (선택하지 않으면 전체 표시)",
+      전체_군단,
+      default=전체_군단,
+  )
+
   if selected_군단:
     df = df[df["군단명"].isin(selected_군단)]
 
   st.markdown("---")
 
-  # 4. 군단별로 섹션을 나눠서 보여주기
+  # 4. 군단별로 섹션을 나눠서 보여주기 (원본 구조 유지)
   군단_목록 = df["군단명"].unique()
 
   if len(군단_목록) > 0:
@@ -102,7 +91,7 @@ if df is not None and not df.empty:
   else:
     st.info("ℹ️ 조건에 해당하는 연맹원이 없습니다.")
 else:
-    st.warning(
-        "⚠️ `members.csv` 파일을 찾을 수 없거나 데이터가 비어 있습니다. 데이터를"
-        " 확인해주세요!"
-    )
+  st.warning(
+      "⚠️ `members.csv` 파일을 찾을 수 없거나 데이터가 비어 있습니다. 데이터를"
+      " 확인해주세요!"
+  )
