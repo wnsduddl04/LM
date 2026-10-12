@@ -190,7 +190,6 @@ with st.popover("📁 데이터 및 파일 관리"):
         df_temp[col] = df_temp[col].astype(str).str.strip()
 
       st.session_state.uploaded_df = df_temp
-      # 업로드 시점의 정확한 시각을 동적으로 갱신
       st.session_state.update_time = datetime.now().strftime(
           "%Y-%m-%d %H:%M:%S"
       )
@@ -424,12 +423,31 @@ with col_f1:
       " 군단 필터</p>",
       unsafe_allow_html=True,
   )
+
+  # 군단 목록 우선순위 정렬 (1군단~5군단 먼저, 나머지는 뒤에 추가)
   corps_list = ["전체"]
   if COL_CORPS in df.columns:
-    unique_corps = df[COL_CORPS].dropna().unique().tolist()
-    corps_list.extend(
-        [str(c) for c in unique_corps if str(c) not in ["nan", "None"]]
+    raw_corps = (
+        df[COL_CORPS].dropna().astype(str).unique().tolist()
     )
+    cleaned_corps = [
+        str(c).strip() for c in raw_corps if str(c) not in ["nan", "None", ""]
+    ]
+
+    # 기본 우선순위 정의 (1군단 ~ 5군단)
+    preferred_order = ["1군단", "2군단", "3군단", "4군단", "5군단"]
+    sorted_corps = []
+
+    # 1~5군단이 데이터에 있으면 지정된 순서대로 먼저 추가
+    for p in preferred_order:
+      if p in cleaned_corps:
+        sorted_corps.append(p)
+        cleaned_corps.remove(p)
+
+    # 나머지 항목(예: 접음 등)은 이름순 또는 등장 순서대로 뒤에 배치
+    sorted_corps.extend(sorted(cleaned_corps))
+    corps_list.extend(sorted_corps)
+
   selected_corps = st.radio(
       "군단 선택",
       corps_list,
@@ -462,18 +480,30 @@ with col_f2:
   target_status_col = COL_STATUS if COL_STATUS in df.columns else "활약도"
   if target_status_col in df.columns:
     raw_status = df[target_status_col].dropna().astype(str).tolist()
-    unique_status = sorted(
-        list(
-            set(
-                [
-                    s.strip()
-                    for s in raw_status
-                    if s not in ["nan", "None", ""]
-                ]
-            )
-        )
+    cleaned_status = list(
+        set([s.strip() for s in raw_status if s not in ["nan", "None", ""]])
     )
-    status_list.extend(unique_status)
+
+    # 지정된 활약도 기준 순서 정의
+    status_order = [
+        "굉장한 활약",
+        "매우 활약",
+        "활약",
+        "활약 저조",
+        "미활약",
+        "활약 매우 저조",
+    ]
+    sorted_status = []
+
+    for s in status_order:
+      if s in cleaned_status:
+        sorted_status.append(s)
+        cleaned_status.remove(s)
+
+    # 기준에 없는 기타 활약도 항목이 있다면 뒤에 추가
+    sorted_status.extend(sorted(cleaned_status))
+    status_list.extend(sorted_status)
+
   selected_status = st.radio(
       "활약도 선택",
       status_list,
