@@ -165,8 +165,6 @@ button[data-testid="stPopoverButton"]:hover {{
 )
 
 # 세션 상태 초기화
-if "update_time" not in st.session_state:
-  st.session_state.update_time = None
 if "uploader_key" not in st.session_state:
   st.session_state.uploader_key = 0
 
@@ -187,9 +185,6 @@ with st.popover("📁 데이터 및 파일 관리"):
       with open("members.xlsx", "wb") as f:
         f.write(uploaded_file.getbuffer())
 
-      st.session_state.update_time = datetime.now().strftime(
-          "%Y-%m-%d %H:%M:%S"
-      )
       st.session_state.uploader_key += 1
       st.success(
           "✨ 데이터가 서버에 영구 갱신(저장)되었습니다! 새로고침해도 유지됩니다."
@@ -198,7 +193,7 @@ with st.popover("📁 데이터 및 파일 관리"):
     except Exception as e:
       st.error(f"❌ 파일 저장 오류: {e}")
 
-  # 현재 데이터 다운로드 준비 (서버에 저장된 members.xlsx 우선 로드)
+  # 현재 데이터 다운로드 준비
   temp_df = None
   try:
     if os.path.exists("members.xlsx"):
@@ -262,8 +257,8 @@ with st.popover("📁 데이터 및 파일 관리"):
     st.warning("⚠️ `assets/서책상담.xlsx` 파일을 찾을 수 없습니다.")
 
 
-# --- 1. 데이터 불러오기 (서버에 저장된 members.xlsx 영구 반영) ---
-@st.cache_data(ttl=5)  # 캐시를 짧게 유지하여 최신 파일 바로 반영
+# --- 1. 데이터 불러오기 및 파일 수정 시각 추출 ---
+@st.cache_data(ttl=5)
 def load_data():
   try:
     if os.path.exists("members.xlsx"):
@@ -276,16 +271,24 @@ def load_data():
         except Exception:
           continue
     else:
-      return pd.DataFrame()
+      return pd.DataFrame(), ""
 
     for col in df.select_dtypes(include=["object"]).columns:
       df[col] = df[col].astype(str).str.strip()
-    return df
+
+    # 서버에 저장된 엑셀 파일의 실제 마지막 수정 시각(파일 메타데이터) 읽기
+    target_file = "members.xlsx" if os.path.exists("members.xlsx") else "members.csv"
+    m_time = os.path.getmtime(target_file)
+    update_time_str = datetime.fromtimestamp(m_time).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+    return df, update_time_str
   except Exception:
-    return pd.DataFrame()
+    return pd.DataFrame(), ""
 
 
-df = load_data()
+df, update_time = load_data()
 
 # 컬럼 정의
 COL_NAME = "이름"
@@ -308,8 +311,8 @@ with col_logo:
     st.title("🛡️")
 
 time_str = (
-    f" | <span style='color: #4fe3c1;'>최종 갱신: {st.session_state.update_time}</span>"
-    if st.session_state.update_time
+    f" | <span style='color: #4fe3c1;'>최종 갱신: {update_time}</span>"
+    if update_time
     else ""
 )
 
@@ -477,7 +480,7 @@ with col_f2:
       if s_str not in ["nan", "None", ""] and s_str not in cleaned_status:
         cleaned_status.append(s_str)
 
-    # 지정된 활약도 기준 순서 정의 (공백 및 텍스트 정확히 매칭)
+    # 지정된 활약도 기준 순서 정의
     status_order = [
         "굉장한 활약",
         "굉장한활약",
@@ -492,13 +495,11 @@ with col_f2:
     ]
     sorted_status = []
 
-    # 순서 목록에 있는 항목 먼저 담기
     for s in status_order:
       if s in cleaned_status:
         sorted_status.append(s)
         cleaned_status.remove(s)
 
-    # 기준에 없는 기타 항목이 있다면 뒤에 추가
     sorted_status.extend(sorted(cleaned_status))
     status_list.extend(sorted_status)
 
@@ -599,7 +600,7 @@ search_msg = (
 
 st.markdown(
     f"<p style='color: #ffffff; font-size: 1.05rem; text-shadow: 1px 1px 2px"
-    f" rgba(0,0,0,0.8);<b>표시 중인 주군{search_msg}:</b>"
+    f" rgba(0,0,0,0.8);'><b>표시 중인 주군{search_msg}:</b>"
     f" <span style='color:#ffd700; font-weight:bold;'>{displayed_count}명</span>"
     f" (전체 {total_count}명)</p>",
     unsafe_allow_html=True,
