@@ -61,14 +61,22 @@ st.markdown(
     margin: 0;
 }}
 
-/* 3. 검색 결과 카드 박스 스타일 */
-.search-result-box {{
+/* 3. 검색 결과 및 활약도 기준 안내 박스 스타일 */
+.search-result-box, .guide-box {{
     background: rgba(15, 23, 42, 0.95);
     border: 2px solid rgba(212, 175, 55, 0.7);
     border-radius: 12px;
     padding: 16px 20px;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
     margin-bottom: 12px;
+}}
+
+.guide-box {{
+    border-color: rgba(212, 175, 55, 0.4);
+    font-size: 0.9rem;
+    color: #e2e8f0;
+    margin-top: 15px;
+    margin-bottom: 20px;
 }}
 
 /* 4. 라디오 버튼 내부 텍스트 크기 및 가독성 설정 */
@@ -144,7 +152,6 @@ if "uploader_key" not in st.session_state:
 with st.popover("📁 데이터 및 파일 관리"):
   st.markdown("### 📊 연맹원 명단 현황판 관리 (.xlsx)")
 
-  # 파일 업로더 (업로드 시 키 값을 바꿔서 위젯을 깨끗하게 초기화)
   uploaded_file = st.file_uploader(
       "현황판 엑셀 업로드 (members.xlsx)",
       type=["xlsx", "xls"],
@@ -158,11 +165,11 @@ with st.popover("📁 데이터 및 파일 관리"):
         df_temp[col] = df_temp[col].astype(str).str.strip()
 
       st.session_state.uploaded_df = df_temp
+      # 실시간 시·분·초까지 정확하게 갱신되도록 반영
       st.session_state.update_time = datetime.now().strftime(
           "%Y-%m-%d %H:%M:%S"
       )
-      # 업로더 위젯 키를 변경하여 화면에서 업로드된 파일 박스를 즉시 제거
-      st.session_state.uploader_key += 1
+      st.session_state.uploader_key += 1  # 업로더 위젯 초기화용 키 증가
       st.success("✨ 데이터가 성공적으로 갱신되었습니다!")
       st.rerun()
     except Exception as e:
@@ -257,7 +264,7 @@ def load_default_data():
     return pd.DataFrame()
 
 
-# 데이터 결정 (세션에 업로드된 데이터가 있으면 우선 사용)
+# 데이터 결정 (업로드된 데이터 우선 사용)
 if st.session_state.uploaded_df is not None:
   df = st.session_state.uploaded_df
 else:
@@ -283,7 +290,7 @@ with col_logo:
   else:
     st.title("🛡️")
 
-# 최종 업로드 갱신 시간 표시 구성
+# 최종 업로드 갱신 시간 (시·분·초 포함) 표시 문자열 구성
 time_str = (
     f" | <span style='color: #4fe3c1;'>최종 갱신: {st.session_state.update_time}</span>"
     if st.session_state.update_time
@@ -438,6 +445,22 @@ with col_f2:
       label_visibility="collapsed",
       key="status_radio",
   )
+
+# --- 📌 활약도 기준 안내 박스 추가 ---
+st.markdown(
+    """
+<div class="guide-box">
+    <b>💡 [활약도 기준 안내]</b><br>
+    • <span style="color: #ffd700;">굉장한 활약</span>: 7일 내 7일 접속 &nbsp;|&nbsp; 
+    • <span style="color: #4fe3c1;">매우 활약</span>: 7일 내 5일 이상 접속 &nbsp;|&nbsp; 
+    • <span style="color: #ffffff;">활약</span>: 7일 내 3일 이상 접속<br>
+    • <span style="color: #cbd5e0;">활약 저조</span>: 7일 내 1일 이상 접속 &nbsp;|&nbsp; 
+    • <span style="color: #f6ad55;">미활약</span>: 7일 내 접속 &nbsp;|&nbsp; 
+    • <span style="color: #ef4444;">활약 매우 저조</span>: 7일 이상 미접속
+</div>
+""",
+    unsafe_allow_html=True,
+)
 
 st.markdown("---")
 
