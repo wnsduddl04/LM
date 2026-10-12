@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime
 import io
 import os
 import pandas as pd
@@ -130,6 +131,12 @@ button[data-testid="stPopoverButton"]:hover {{
     unsafe_allow_html=True,
 )
 
+# 세션 상태에 업로드된 데이터와 마지막 업데이트 시간 저장
+if "uploaded_df" not in st.session_state:
+  st.session_state.uploaded_df = None
+if "update_time" not in st.session_state:
+  st.session_state.update_time = None
+
 # --- 📁 데이터 및 파일 관리 팝오버 메뉴 ---
 with st.popover("📁 데이터 및 파일 관리"):
   st.markdown("### 📊 연맹원 명단 현황판 관리 (.xlsx)")
@@ -137,17 +144,29 @@ with st.popover("📁 데이터 및 파일 관리"):
       "현황판 엑셀 업로드 (members.xlsx)", type=["xlsx", "xls"]
   )
 
+  if uploaded_file is not None:
+    try:
+      st.session_state.uploaded_df = pd.read_excel(uploaded_file)
+      st.session_state.update_time = datetime.now().strftime(
+          "%Y-%m-%d %H:%M:%S"
+      )
+      st.success("✨ 데이터가 성공적으로 갱신되었습니다!")
+      st.rerun()  # 화면을 즉시 갱신하여 업로드창 흔적을 깔끔하게 숨김
+    except Exception as e:
+      st.error(f"❌ 파일 읽기 오류: {e}")
+
+  # 현재 데이터 다운로드 준비
   temp_df = None
-  try:
-    if uploaded_file is not None:
-      temp_df = pd.read_excel(uploaded_file)
-    else:
+  if st.session_state.uploaded_df is not None:
+    temp_df = st.session_state.uploaded_df
+  else:
+    try:
       if os.path.exists("members.xlsx"):
         temp_df = pd.read_excel("members.xlsx")
       elif os.path.exists("members.csv"):
         temp_df = pd.read_csv("members.csv")
-  except Exception:
-    temp_df = None
+    except Exception:
+      temp_df = None
 
   if temp_df is not None and not temp_df.empty:
     output = io.BytesIO()
@@ -166,7 +185,7 @@ with st.popover("📁 데이터 및 파일 관리"):
 
   st.markdown("### 🛠️ 서책계산기 매크로 파일 (ZIP 압축 배포)")
   st.markdown(
-      "<p style='color: #cbd5e0; font-size: 0.85rem;'>압축을 풀어서"
+      '<p style="color: #cbd5e0; font-size: 0.85rem;">압축을 풀어서'
       " 사용하시면 보안 경고 없이 편리하게 실행됩니다.</p>",
       unsafe_allow_html=True,
   )
@@ -205,22 +224,19 @@ with st.popover("📁 데이터 및 파일 관리"):
 
 # --- 1. 데이터 불러오기 (.xlsx 우선) ---
 @st.cache_data
-def load_data(file):
+def load_default_data():
   try:
-    if file is not None:
-      df = pd.read_excel(file)
+    if os.path.exists("members.xlsx"):
+      df = pd.read_excel("members.xlsx")
+    elif os.path.exists("members.csv"):
+      for encoding in ["utf-8-sig", "cp949", "utf-8", "latin1"]:
+        try:
+          df = pd.read_csv("members.csv", encoding=encoding)
+          break
+        except Exception:
+          continue
     else:
-      if os.path.exists("members.xlsx"):
-        df = pd.read_excel("members.xlsx")
-      elif os.path.exists("members.csv"):
-        for encoding in ["utf-8-sig", "cp949", "utf-8", "latin1"]:
-          try:
-            df = pd.read_csv("members.csv", encoding=encoding)
-            break
-          except Exception:
-            continue
-      else:
-        return pd.DataFrame()
+      return pd.DataFrame()
 
     for col in df.select_dtypes(include=["object"]).columns:
       df[col] = df[col].astype(str).str.strip()
@@ -229,7 +245,11 @@ def load_data(file):
     return pd.DataFrame()
 
 
-df = load_data(uploaded_file)
+# 세션에 업로드된 데이터가 있으면 그것을 쓰고, 없으면 기본 파일 로드
+if st.session_state.uploaded_df is not None:
+  df = st.session_state.uploaded_df
+else:
+  df = load_default_data()
 
 # 컬럼 정의
 COL_NAME = "이름"
@@ -251,13 +271,23 @@ with col_logo:
   else:
     st.title("🛡️")
 
+# 마지막 업데이트 시간 표시 텍스트 생성
+time_str = (
+    f" | <span style='color: #4fe3c1;'>최종 갱신: {st.session_state.update_time}</span>"
+    if st.session_state.update_time
+    else ""
+)
+
 with col_text:
-  st.markdown("""
+  st.markdown(
+      f"""
         <div class="main-header">
             <h1 class="header-title">🌙 LUCKY MOON 럭키문 연맹</h1>
-            <p style="color: #e2e8f0; font-size: 1.05rem; margin-top: 5px; margin-bottom: 0;">전투력별 군단 나눔 및 연맹원 실시간 관리 현황판</p>
+            <p style="color: #e2e8f0; font-size: 1.05rem; margin-top: 5px; margin-bottom: 0;">전투력별 군단 나눔 및 연맹원 실시간 관리 현황판{time_str}</p>
         </div>
-    """, unsafe_allow_html=True)
+    """,
+      unsafe_allow_html=True,
+  )
 
 
 # --- 3. 검색 및 필터 UI ---
@@ -324,10 +354,10 @@ if search_query and search_query.strip():
       st.markdown(card_html, unsafe_allow_html=True)
   else:
     st.markdown(
-        f"""
+        """
         <div class="search-result-box" style="border-color: #ef4444;">
             <div style="color: #ef4444; font-size: 1.1rem; font-weight: bold; text-align: center;">
-                ❌ '{search_query}'에 해당하는 주군이 없습니다.
+                ❌ 검색 결과가 없습니다.
             </div>
         </div>
         """,
