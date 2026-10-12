@@ -289,7 +289,7 @@ def load_data():
 
 df, update_time = load_data()
 
-# 컬럼 정의 (D열을 '배치지역'으로 매핑)
+# 컬럼 정의
 COL_NAME = "이름"
 COL_CORPS = "군단명"
 COL_POWER = "전투력"
@@ -391,7 +391,6 @@ if search_query and search_query.strip():
           else ""
       )
 
-      # 배치지역이 있으면 중간에 눈에 띄는 굵고 선명한 오렌지색(#ff8c00)으로 크게 표시
       location_display = (
           f'<span style="color: #ff8c00; font-size: 1.35rem; font-weight: 900;'
           f' text-shadow: 0 0 8px rgba(255,140,0,0.6); margin-left: '
@@ -428,10 +427,10 @@ if search_query and search_query.strip():
   st.markdown("<br>", unsafe_allow_html=True)
 
 
-# --- 6. 군단 및 활약도 선택 필터 ---
+# --- 6. 군단, 배치지역 및 활약도 선택 필터 ---
 st.markdown(
     "<h3 style='color: #ffd700; margin-top: 10px; font-size: 1.3rem;"
-    " text-shadow: 2px 2px 4px rgba(0,0,0,0.8);'>⚔️ 군단 및 활약도 선택</h3>",
+    " text-shadow: 2px 2px 4px rgba(0,0,0,0.8);'>⚔️ 연맹원 정렬 및 필터</h3>",
     unsafe_allow_html=True,
 )
 
@@ -472,6 +471,41 @@ with col_f1:
       label_visibility="collapsed",
       key="corps_radio",
   )
+
+  # --- D열(배치지역)에 내용이 있을 때만 동적으로 생성되는 배치지역 필터 ---
+  has_location_data = False
+  location_list = ["전체 지역"]
+  if COL_LOCATION in df.columns:
+    raw_locs = df[COL_LOCATION].dropna().astype(str).tolist()
+    cleaned_locs = []
+    for l in raw_locs:
+      l_str = l.strip()
+      if (
+          l_str
+          and l_str not in ["nan", "None", ""]
+          and l_str not in cleaned_locs
+      ):
+        cleaned_locs.append(l_str)
+
+    if cleaned_locs:
+      has_location_data = True
+      location_list.extend(sorted(cleaned_locs))
+
+  selected_location = "전체 지역"
+  if has_location_data:
+    st.markdown(
+        "<p style='color:#ff8c00; font-size:1.1rem; font-weight:800;"
+        " margin-top:15px; margin-bottom:5px; text-shadow: 1px 1px 3px"
+        " rgba(0,0,0,0.8);'>📍 배치지역 필터</p>",
+        unsafe_allow_html=True,
+    )
+    selected_location = st.radio(
+        "배치지역 선택",
+        location_list,
+        horizontal=True,
+        label_visibility="collapsed",
+        key="location_radio",
+    )
 
 with col_f2:
   st.markdown(
@@ -534,11 +568,21 @@ with col_f2:
 
 st.markdown("---")
 
-# --- 7. 최종 필터 적용 ---
+# --- 7. 최종 필터 적용 (군단 + 배치지역 + 활약도) ---
 if selected_corps != "전체" and COL_CORPS in filtered_df.columns:
   filtered_df = filtered_df[
       filtered_df[COL_CORPS].astype(str).str.strip()
       == str(selected_corps).strip()
+  ]
+
+if (
+    has_location_data
+    and selected_location != "전체 지역"
+    and COL_LOCATION in filtered_df.columns
+):
+  filtered_df = filtered_df[
+      filtered_df[COL_LOCATION].astype(str).str.strip()
+      == str(selected_location).strip()
   ]
 
 if selected_status != "전체 활약" and target_status_col in filtered_df.columns:
