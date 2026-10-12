@@ -57,26 +57,52 @@ def load_data(file):
 df = load_data(uploaded_file)
 
 if df is not None and not df.empty:
-  # 3. 검색 및 필터 기능 추가
-  search_name = st.text_input("🔍 연맹원 이름 검색", "")
+  st.markdown("---")
+
+  # 상단 필터 영역 (이름 검색 + 군단 선택 필터)
+  col1, col2 = st.columns([1, 1])
+
+  with col1:
+    search_name = st.text_input("🔍 연맹원 이름 검색", "")
+
+  with col2:
+    # 전체 군단 목록 추출
+    전체_군단 = list(df["군단명"].unique())
+    # 군단 필터 다중 선택 (기본값은 전체 선택)
+    selected_군단 = st.multiselect(
+        "🛡️ 군단 필터 (선택하지 않으면 전체 표시)",
+        전체_군단,
+        default=전체_군단,
+    )
+
+  # 이름 검색 필터 적용
   if search_name:
     df = df[df["이름"].str.contains(search_name, na=False)]
+
+  # 군단 필터 적용
+  if selected_군단:
+    df = df[df["군단명"].isin(selected_군단)]
+
+  st.markdown("---")
 
   # 4. 군단별로 섹션을 나눠서 보여주기
   군단_목록 = df["군단명"].unique()
 
-  for 군단 in 군단_목록:
-    st.subheader(f"⚔️ {군단}")
-    # 해당 군단에 속한 사람들만 필터링
-    군단_df = df[df["군단명"] == 군단]
+  if len(군단_목록) > 0:
+    for 군단 in 군단_목록:
+      st.subheader(f"⚔️ {군단}")
+      # 해당 군단에 속한 사람들만 필터링
+      군단_df = df[df["군단명"] == 군단]
 
-    # 표 형태로 깔끔하게 출력 (인덱스 숨기기)
-    st.dataframe(군단_df, use_container_width=True, hide_index=True)
+      # 표 형태로 깔끔하게 출력 (인덱스 숨기기)
+      st.dataframe(군단_df, use_container_width=True, hide_index=True)
 
-    # 구분선
-    st.markdown("---")
+      # 구분선
+      st.markdown("---")
+  else:
+    st.info("ℹ️ 조건에 해당하는 연맹원이 없습니다.")
 else:
-  st.warning(
-      "⚠️ `members.csv` 파일을 찾을 수 없거나 데이터가 비어 있습니다. 데이터를"
-      " 확인해주세요!"
-  )
+    st.warning(
+        "⚠️ `members.csv` 파일을 찾을 수 없거나 데이터가 비어 있습니다. 데이터를"
+        " 확인해주세요!"
+    )
