@@ -88,8 +88,8 @@ div[data-testid="stDataFrame"] {{
 
 /* 5. 팝오버 버튼 가시성 확보 (배경색 및 금색 테두리 고정) */
 button[data-testid="stPopoverButton"] {{
-    background-color: rgba(15, 23, 42, 0.9) !important;
-    border: 2px solid rgba(212, 175, 55, 0.8) !important;
+    background-color: rgba(15, 23, 42, 0.95) !important;
+    border: 2px solid rgba(212, 175, 55, 0.9) !important;
     color: #ffd700 !important;
     font-weight: bold !important;
     box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
@@ -130,16 +130,14 @@ button[data-testid="stPopoverButton"]:hover {{
     unsafe_allow_html=True,
 )
 
-# --- 📁 데이터 관리 팝오버 메뉴 (.xlsx 업로드 및 다운로드) ---
-with st.popover("📁 데이터 관리 (엑셀 업로드 / 다운로드)"):
-  st.markdown("### 📊 연맹원 명단 엑셀 관리")
+# --- 📁 데이터 및 매크로 파일 관리 팝오버 메뉴 ---
+with st.popover("📁 데이터 및 매크로 관리"):
+  st.markdown("### 📊 연맹원 명단 현황판 관리 (.xlsx)")
   uploaded_file = st.file_uploader(
-      "새로운 엑셀 파일 업로드 (members.xlsx)", type=["xlsx", "xls"]
+      "현황판 엑셀 업로드 (members.xlsx)", type=["xlsx", "xls"]
   )
 
-  st.markdown("---")
-
-  # 현재 데이터 다운로드 준비
+  # 현재 현황판 다운로드 준비
   temp_df = None
   try:
     if uploaded_file is not None:
@@ -165,8 +163,37 @@ with st.popover("📁 데이터 관리 (엑셀 업로드 / 다운로드)"):
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
+  st.markdown("---")
 
-# --- 1. 데이터 불러오기 (.xlsx 우선, 없으면 .csv fallback) ---
+  st.markdown("### 🛠️ 매크로 파일 관리 (.xlsm)")
+  uploaded_xlsm = st.file_uploader(
+      "매크로 파일 업로드 (members_macro.xlsm)", type=["xlsm"]
+  )
+
+  # 업로드된 xlsm 파일 서버에 저장 처리 (선택사항)
+  if uploaded_xlsm is not None:
+    with open("members_macro.xlsm", "wb") as f:
+      f.write(uploaded_xlsm.getbuffer())
+    st.success("✨ 매크로 파일이 성공적으로 업로드되었습니다!")
+
+  # 매크로 파일 다운로드 버튼 제공
+  xlsm_path = "members_macro.xlsm"
+  if os.path.exists(xlsm_path):
+    with open(xlsm_path, "rb") as f:
+      xlsm_bytes = f.read()
+    st.download_button(
+        label="📥 매크로 파일 다운로드 (.xlsm)",
+        data=xlsm_bytes,
+        file_name="members_macro.xlsm",
+        mime=(
+            "application/vnd.ms-excel.sheet.macroEnabled.12"
+        ),
+    )
+  else:
+    st.info("ℹ️ 서버에 저장된 `.xlsm` 매크로 파일이 없습니다. 파일을 업로드해주세요.")
+
+
+# --- 1. 데이터 불러오기 (.xlsx 우선) ---
 @st.cache_data
 def load_data(file):
   try:
@@ -176,7 +203,6 @@ def load_data(file):
       if os.path.exists("members.xlsx"):
         df = pd.read_excel("members.xlsx")
       elif os.path.exists("members.csv"):
-        # 기존 csv 호환용
         for encoding in ["utf-8-sig", "cp949", "utf-8", "latin1"]:
           try:
             df = pd.read_csv("members.csv", encoding=encoding)
