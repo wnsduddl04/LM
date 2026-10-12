@@ -181,7 +181,6 @@ with st.popover("📁 데이터 및 파일 관리"):
 
   if uploaded_file is not None:
     try:
-      # 업로드된 파일을 서버의 'members.xlsx'로 직접 저장 (덮어쓰기)
       with open("members.xlsx", "wb") as f:
         f.write(uploaded_file.getbuffer())
 
@@ -193,7 +192,6 @@ with st.popover("📁 데이터 및 파일 관리"):
     except Exception as e:
       st.error(f"❌ 파일 저장 오류: {e}")
 
-  # 현재 데이터 다운로드 준비
   temp_df = None
   try:
     if os.path.exists("members.xlsx"):
@@ -276,8 +274,9 @@ def load_data():
     for col in df.select_dtypes(include=["object"]).columns:
       df[col] = df[col].astype(str).str.strip()
 
-    # 서버에 저장된 엑셀 파일의 실제 마지막 수정 시각(파일 메타데이터) 읽기
-    target_file = "members.xlsx" if os.path.exists("members.xlsx") else "members.csv"
+    target_file = (
+        "members.xlsx" if os.path.exists("members.xlsx") else "members.csv"
+    )
     m_time = os.path.getmtime(target_file)
     update_time_str = datetime.fromtimestamp(m_time).strftime(
         "%Y-%m-%d %H:%M:%S"
@@ -290,12 +289,13 @@ def load_data():
 
 df, update_time = load_data()
 
-# 컬럼 정의
+# 컬럼 정의 (D열을 '배치지역'으로 매핑)
 COL_NAME = "이름"
 COL_CORPS = "군단명"
 COL_POWER = "전투력"
 COL_STATUS = "접속률"
 COL_LEADER = "군단장"
+COL_LOCATION = "배치지역"  # D열 배치지역
 
 total_count = len(df)
 
@@ -328,24 +328,34 @@ with col_text:
   )
 
 
-# --- 3. 검색 및 필터 UI ---
+# --- 3. 검색 및 필터 UI (이름 또는 배치지역 검색) ---
 search_query = st.text_input(
-    "🔍 연맹원 이름 검색",
-    placeholder="찾고자 하는 주군의 이름을 적어주세요",
+    "🔍 연맹원 이름 또는 배치지역 검색",
+    placeholder="주군의 이름이나 배치지역(예: E99)을 적어주세요",
     label_visibility="collapsed",
 )
 
 
-# --- 4. 데이터 필터링 미리 계산 ---
+# --- 4. 데이터 필터링 미리 계산 (이름 + 배치지역 동시 검색) ---
 filtered_df = df.copy()
 
-if search_query and COL_NAME in filtered_df.columns:
-  filtered_df = filtered_df[
-      filtered_df[COL_NAME].astype(str).str.contains(search_query, na=False)
-  ]
+if search_query and search_query.strip():
+  q = search_query.strip()
+  cond = pd.Series(False, index=filtered_df.index)
+
+  if COL_NAME in filtered_df.columns:
+    cond = cond | filtered_df[COL_NAME].astype(str).str.contains(
+        q, case=False, na=False
+    )
+  if COL_LOCATION in filtered_df.columns:
+    cond = cond | filtered_df[COL_LOCATION].astype(str).str.contains(
+        q, case=False, na=False
+    )
+
+  filtered_df = filtered_df[cond]
 
 
-# --- 5. 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 ---
+# --- 5. 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 (배치지역 강조) ---
 if search_query and search_query.strip():
   st.markdown(
       f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
@@ -367,6 +377,11 @@ if search_query and search_query.strip():
       leader = (
           str(row.get(COL_LEADER, "")) if COL_LEADER in df.columns else ""
       )
+      location = (
+          str(row.get(COL_LOCATION, ""))
+          if COL_LOCATION in df.columns
+          else ""
+      )
 
       leader_badge = (
           f'<span style="background-color: #d4af37; color: #0f172a; padding:'
@@ -376,18 +391,27 @@ if search_query and search_query.strip():
           else ""
       )
 
+      # 배치지역이 있으면 중간에 눈에 띄는 굵고 선명한 오렌지색(#ff8c00)으로 크게 표시
+      location_display = (
+          f'<span style="color: #ff8c00; font-size: 1.35rem; font-weight: 900;'
+          f' text-shadow: 0 0 8px rgba(255,140,0,0.6); margin-left: '
+          f'20px;">📍 {location}</span>'
+          if location and location not in ["nan", "None", ""]
+          else ""
+      )
+
       card_html = (
           '<div class="search-result-box"><div style="display: flex;'
           " justify-content: space-between; align-items: center; flex-wrap:"
           ' wrap; gap: 10px;"><div><span style="color: #ffffff; font-size:'
           f' 1.25rem; font-weight: 900;">🛡️ {name}</span><span style="color:'
           ' #ffd700; font-size: 1.1rem; font-weight: bold; margin-left:'
-          f' 8px;">[{corps}]</span>{leader_badge}</div><div><span style="color:'
-          ' #cbd5e0; font-size: 0.95rem;">전투력:</span> <span style="color:'
-          ' #4fe3c1; font-size: 1.1rem; font-weight: bold; margin-right:'
-          f' 8px;">{power}</span><span style="color: #cbd5e0; font-size:'
-          ' 0.95rem;">활약도:</span> <span style="color: #ffffff; font-size:'
-          f' 1.1rem; font-weight: bold;">{status}</span></div></div></div>'
+          f' 8px;">[{corps}]</span>{leader_badge}{location_display}</div><div><span'
+          ' style="color: #cbd5e0; font-size: 0.95rem;">전투력:</span> <span'
+          ' style="color: #4fe3c1; font-size: 1.1rem; font-weight: bold;'
+          f' margin-right: 8px;">{power}</span><span style="color: #cbd5e0;'
+          ' font-size: 0.95rem;">활약도:</span> <span style="color: #ffffff;'
+          f' font-size: 1.1rem; font-weight: bold;">{status}</span></div></div></div>'
       )
       st.markdown(card_html, unsafe_allow_html=True)
   else:
@@ -421,7 +445,6 @@ with col_f1:
       unsafe_allow_html=True,
   )
 
-  # 군단 목록 우선순위 정렬 (1군단~5군단 먼저, 나머지는 뒤에 추가)
   corps_list = ["전체"]
   if COL_CORPS in df.columns:
     raw_corps = df[COL_CORPS].dropna().astype(str).tolist()
@@ -451,7 +474,6 @@ with col_f1:
   )
 
 with col_f2:
-  # 활약도 필터 타이틀에 마우스 오버 툴팁(메모 박스) 적용
   st.markdown(
       """
     <div class="tooltip-container">
@@ -480,7 +502,6 @@ with col_f2:
       if s_str not in ["nan", "None", ""] and s_str not in cleaned_status:
         cleaned_status.append(s_str)
 
-    # 지정된 활약도 기준 순서 정의
     status_order = [
         "굉장한 활약",
         "굉장한활약",
