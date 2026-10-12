@@ -130,14 +130,13 @@ button[data-testid="stPopoverButton"]:hover {{
     unsafe_allow_html=True,
 )
 
-# --- 📁 데이터 및 매크로 파일 관리 팝오버 메뉴 ---
-with st.popover("📁 데이터 및 매크로 관리"):
+# --- 📁 데이터, 매크로 및 서책 상담 양식 관리 팝오버 메뉴 ---
+with st.popover("📁 데이터 및 파일 관리"):
   st.markdown("### 📊 연맹원 명단 현황판 관리 (.xlsx)")
   uploaded_file = st.file_uploader(
       "현황판 엑셀 업로드 (members.xlsx)", type=["xlsx", "xls"]
   )
 
-  # 현재 현황판 다운로드 준비
   temp_df = None
   try:
     if uploaded_file is not None:
@@ -165,32 +164,53 @@ with st.popover("📁 데이터 및 매크로 관리"):
 
   st.markdown("---")
 
-  st.markdown("### 🛠️ 매크로 파일 관리 (.xlsm)")
+  st.markdown("### 🛠️ 서책계산기 매크로 파일 (.xlsm)")
   uploaded_xlsm = st.file_uploader(
-      "매크로 파일 업로드 (members_macro.xlsm)", type=["xlsm"]
+      "매크로 파일 업로드 (서책계산기.xlsm)", type=["xlsm"]
   )
-
-  # 업로드된 xlsm 파일 서버에 저장 처리 (선택사항)
   if uploaded_xlsm is not None:
-    with open("members_macro.xlsm", "wb") as f:
+    with open("서책계산기.xlsm", "wb") as f:
       f.write(uploaded_xlsm.getbuffer())
-    st.success("✨ 매크로 파일이 성공적으로 업로드되었습니다!")
+    st.success("✨ '서책계산기.xlsm' 파일이 업로드되었습니다!")
 
-  # 매크로 파일 다운로드 버튼 제공
-  xlsm_path = "members_macro.xlsm"
-  if os.path.exists(xlsm_path):
-    with open(xlsm_path, "rb") as f:
+  if os.path.exists("서책계산기.xlsm"):
+    with open("서책계산기.xlsm", "rb") as f:
       xlsm_bytes = f.read()
     st.download_button(
-        label="📥 매크로 파일 다운로드 (.xlsm)",
+        label="📥 서책계산기 다운로드 (서책계산기.xlsm)",
         data=xlsm_bytes,
-        file_name="members_macro.xlsm",
+        file_name="서책계산기.xlsm",
+        mime="application/vnd.ms-excel.sheet.macroEnabled.12",
+    )
+  else:
+    st.info(
+        "ℹ️ 서버에 '서책계산기.xlsm' 파일이 없습니다. 파일을 업로드해주세요."
+    )
+
+  st.markdown("---")
+
+  st.markdown("### 📋 서책 상담 양식 파일 (.xlsx)")
+  uploaded_consult = st.file_uploader(
+      "서책 상담 양식 업로드 (서책상담.xlsx)", type=["xlsx"]
+  )
+  if uploaded_consult is not None:
+    with open("서책상담.xlsx", "wb") as f:
+      f.write(uploaded_consult.getbuffer())
+    st.success("✨ '서책상담.xlsx' 양식 파일이 업로드되었습니다!")
+
+  if os.path.exists("서책상담.xlsx"):
+    with open("서책상담.xlsx", "rb") as f:
+      consult_bytes = f.read()
+    st.download_button(
+        label="📥 서책 상담 양식 다운로드 (서책상담.xlsx)",
+        data=consult_bytes,
+        file_name="서책상담.xlsx",
         mime=(
-            "application/vnd.ms-excel.sheet.macroEnabled.12"
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         ),
     )
   else:
-    st.info("ℹ️ 서버에 저장된 `.xlsm` 매크로 파일이 없습니다. 파일을 업로드해주세요.")
+    st.info("ℹ️ 서버에 '서책상담.xlsx' 양식 파일이 없습니다. 업로드해주세요.")
 
 
 # --- 1. 데이터 불러오기 (.xlsx 우선) ---
