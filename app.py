@@ -1,4 +1,5 @@
 import base64
+import io
 import os
 import pandas as pd
 import streamlit as st
@@ -85,6 +86,20 @@ div[data-testid="stDataFrame"] {{
     padding: 8px;
 }}
 
+/* 5. 팝오버 버튼 가시성 확보 (배경색 및 금색 테두리 고정) */
+button[data-testid="stPopoverButton"] {{
+    background-color: rgba(15, 23, 42, 0.9) !important;
+    border: 2px solid rgba(212, 175, 55, 0.8) !important;
+    color: #ffd700 !important;
+    font-weight: bold !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+}}
+button[data-testid="stPopoverButton"]:hover {{
+    background-color: rgba(30, 41, 59, 1) !important;
+    border-color: #ffd700 !important;
+    color: #ffffff !important;
+}}
+
 /* ==========================================
     📱 모바일 화면 최적화 (화면 너비 768px 이하)
     ========================================== */
@@ -115,55 +130,67 @@ div[data-testid="stDataFrame"] {{
     unsafe_allow_html=True,
 )
 
-# --- 📁 데이터 관리 팝오버 메뉴 (엑셀/CSV 업로드 및 다운로드) ---
-with st.popover("📁 데이터 관리 (업로드 / 다운로드)"):
-  st.markdown("### 📊 데이터 관리 메뉴")
+# --- 📁 데이터 관리 팝오버 메뉴 (.xlsx 업로드 및 다운로드) ---
+with st.popover("📁 데이터 관리 (엑셀 업로드 / 다운로드)"):
+  st.markdown("### 📊 연맹원 명단 엑셀 관리")
   uploaded_file = st.file_uploader(
-      "새로운 데이터 파일 업로드 (csv)", type=["csv"]
+      "새로운 엑셀 파일 업로드 (members.xlsx)", type=["xlsx", "xls"]
   )
 
   st.markdown("---")
 
   # 현재 데이터 다운로드 준비
+  temp_df = None
   try:
     if uploaded_file is not None:
-      temp_df = pd.read_csv(uploaded_file)
+      temp_df = pd.read_excel(uploaded_file)
     else:
-      for encoding in ["utf-8-sig", "cp949", "utf-8", "latin1"]:
-        try:
-          temp_df = pd.read_csv("members.csv", encoding=encoding)
-          break
-        except Exception:
-          temp_df = None
+      if os.path.exists("members.xlsx"):
+        temp_df = pd.read_excel("members.xlsx")
+      elif os.path.exists("members.csv"):
+        temp_df = pd.read_csv("members.csv")
   except Exception:
     temp_df = None
 
   if temp_df is not None and not temp_df.empty:
-    csv_data = temp_df.to_csv(index=False).encode("utf-8-sig")
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+      temp_df.to_excel(writer, index=False, sheet_name="나눔현황")
+    excel_data = output.getvalue()
+
     st.download_button(
-        label="📥 현재 현황 파일 다운로드",
-        data=csv_data,
-        file_name="members.csv",
-        mime="text/csv",
+        label="📥 현재 현황 엑셀 다운로드 (.xlsx)",
+        data=excel_data,
+        file_name="members.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 
-# --- 1. 데이터 불러오기 ---
+# --- 1. 데이터 불러오기 (.xlsx 우선, 없으면 .csv fallback) ---
 @st.cache_data
 def load_data(file):
-  for encoding in ["utf-8-sig", "cp949", "utf-8", "latin1"]:
-    try:
-      if file is not None:
-        df = pd.read_csv(file, encoding=encoding)
+  try:
+    if file is not None:
+      df = pd.read_excel(file)
+    else:
+      if os.path.exists("members.xlsx"):
+        df = pd.read_excel("members.xlsx")
+      elif os.path.exists("members.csv"):
+        # 기존 csv 호환용
+        for encoding in ["utf-8-sig", "cp949", "utf-8", "latin1"]:
+          try:
+            df = pd.read_csv("members.csv", encoding=encoding)
+            break
+          except Exception:
+            continue
       else:
-        df = pd.read_csv("members.csv", encoding=encoding)
+        return pd.DataFrame()
 
-      for col in df.select_dtypes(include=["object"]).columns:
-        df[col] = df[col].astype(str).str.strip()
-      return df
-    except Exception:
-      continue
-  return pd.DataFrame()
+    for col in df.select_dtypes(include=["object"]).columns:
+      df[col] = df[col].astype(str).str.strip()
+    return df
+  except Exception:
+    return pd.DataFrame()
 
 
 df = load_data(uploaded_file)
