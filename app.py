@@ -101,7 +101,7 @@ button[data-testid="stPopoverButton"]:hover {{
     color: #ffffff !important;
 }}
 
-/* 6. 활약도 필터 마우스 오버 툴팁 (메모 박스 스타일) */
+/* 6. 활약도/접속시간 필터 마우스 오버 툴팁 */
 .tooltip-container {{
     position: relative;
     display: inline-block;
@@ -289,13 +289,21 @@ def load_data():
 
 df, update_time = load_data()
 
-# 컬럼 정의
+# 컬럼 정의 (G열은 엑셀의 7번째 열이므로, 엑셀 구조상 대개 인덱스 6번 혹은 '활약도', '접속가능시간' 등으로 동적 매핑)
 COL_NAME = "이름"
 COL_CORPS = "군단명"
 COL_POWER = "전투력"
-COL_STATUS = "접속률"
 COL_LEADER = "군단장"
 COL_LOCATION = "배치지역"  # D열 배치지역
+
+# G열 컬럼명 동적 감지 (G열인 6번째 컬럼이 존재하면 그 이름을 사용, 없으면 '활약도' 기본값)
+target_status_col = "활약도"
+if len(df.columns) > 6:
+  target_status_col = df.columns[6]  # 0부터 시작하므로 6번째가 G열
+elif "활약도" in df.columns:
+  target_status_col = "활약도"
+elif "접속가능시간" in df.columns:
+  target_status_col = "접속가능시간"
 
 total_count = len(df)
 
@@ -336,7 +344,7 @@ search_query = st.text_input(
 )
 
 
-# --- 4. 데이터 필터링 미리 계산 (이름 + 배치지역 동시 검색) ---
+# --- 4. 데이터 필터링 미리 계산 ---
 filtered_df = df.copy()
 
 if search_query and search_query.strip():
@@ -355,7 +363,7 @@ if search_query and search_query.strip():
   filtered_df = filtered_df[cond]
 
 
-# --- 5. 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 (배치지역 강조) ---
+# --- 5. 헤더 바로 밑에 뜨는 실시간 검색 결과 카드 영역 ---
 if search_query and search_query.strip():
   st.markdown(
       f"<h2 style='color: #ffd700; font-size: 1.4rem; text-shadow: 2px 2px 4px"
@@ -370,9 +378,9 @@ if search_query and search_query.strip():
       corps = row.get(COL_CORPS, "소속 없음")
       power = row.get(COL_POWER, "정보 없음")
       status = (
-          row.get(COL_STATUS, "정보 없음")
-          if COL_STATUS in df.columns
-          else row.get("활약도", "정보 없음")
+          row.get(target_status_col, "정보 없음")
+          if target_status_col in df.columns
+          else "정보 없음"
       )
       leader = (
           str(row.get(COL_LEADER, "")) if COL_LEADER in df.columns else ""
@@ -406,11 +414,12 @@ if search_query and search_query.strip():
           f' 1.25rem; font-weight: 900;">🛡️ {name}</span><span style="color:'
           ' #ffd700; font-size: 1.1rem; font-weight: bold; margin-left:'
           f' 8px;">[{corps}]</span>{leader_badge}{location_display}</div><div><span'
-          ' style="color: #cbd5e0; font-size: 0.95rem;">전투력:</span> <span'
+          f' style="color: #cbd5e0; font-size: 0.95rem;">전투력:</span> <span'
           ' style="color: #4fe3c1; font-size: 1.1rem; font-weight: bold;'
           f' margin-right: 8px;">{power}</span><span style="color: #cbd5e0;'
-          ' font-size: 0.95rem;">활약도:</span> <span style="color: #ffffff;'
-          f' font-size: 1.1rem; font-weight: bold;">{status}</span></div></div></div>'
+          f' font-size: 0.95rem;">{target_status_col}:</span> <span'
+          f' style="color: #ffffff; font-size: 1.1rem; font-weight:'
+          f' bold;">{status}</span></div></div></div>'
       )
       st.markdown(card_html, unsafe_allow_html=True)
   else:
@@ -427,7 +436,7 @@ if search_query and search_query.strip():
   st.markdown("<br>", unsafe_allow_html=True)
 
 
-# --- 6. 군단, 배치지역 및 활약도 선택 필터 ---
+# --- 6. 군단, 배치지역 및 G열(동적 필터) 선택 UI ---
 st.markdown(
     "<h3 style='color: #ffd700; margin-top: 10px; font-size: 1.3rem;"
     " text-shadow: 2px 2px 4px rgba(0,0,0,0.8);'>⚔️ 연맹원 정렬 및 필터</h3>",
@@ -472,7 +481,7 @@ with col_f1:
       key="corps_radio",
   )
 
-  # --- D열(배치지역)에 내용이 있을 때만 동적으로 생성되는 배치지역 필터 ---
+  # D열(배치지역) 내용이 있을 때만 동적 생성
   has_location_data = False
   location_list = ["전체 지역"]
   if COL_LOCATION in df.columns:
@@ -508,26 +517,34 @@ with col_f1:
     )
 
 with col_f2:
-  st.markdown(
-      """
-    <div class="tooltip-container">
-        🔥 활약도(접속률) 필터 ⓘ
-        <span class="tooltip-text">
-            <b>[활약도 기준 안내]</b><br>
-            • <b>굉장한 활약</b>: 7일 내 7일 접속<br>
-            • <b>매우 활약</b>: 7일 내 5일 이상 접속<br>
-            • <b>활약</b>: 7일 내 3일 이상 접속<br>
-            • <b>활약 저조</b>: 7일 내 1일 이상 접속<br>
-            • <b>미활약</b>: 7일 내 접속<br>
-            • <b>활약 매우 저조</b>: 7일 이상 미접속
-        </span>
-    </div>
-    """,
-      unsafe_allow_html=True,
-  )
+  # G열 항목명에 맞춰 동적으로 필터 메뉴 생성 (예: 접속가능시간, 활약도 등)
+  is_activity = "활약" in target_status_col
 
-  status_list = ["전체 활약"]
-  target_status_col = COL_STATUS if COL_STATUS in df.columns else "활약도"
+  if is_activity:
+    header_html = f"""
+        <div class="tooltip-container">
+            🔥 {target_status_col} 필터 ⓘ
+            <span class="tooltip-text">
+                <b>[활약도 기준 안내]</b><br>
+                • <b>굉장한 활약</b>: 7일 내 7일 접속<br>
+                • <b>매우 활약</b>: 7일 내 5일 이상 접속<br>
+                • <b>활약</b>: 7일 내 3일 이상 접속<br>
+                • <b>활약 저조</b>: 7일 내 1일 이상 접속<br>
+                • <b>미활약</b>: 7일 내 접속<br>
+                • <b>활약 매우 저조</b>: 7일 이상 미접속
+            </span>
+        </div>
+        """
+  else:
+    header_html = f"""
+        <div style="color: #ffd700; font-weight: 800; font-size: 1.15rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); margin-bottom: 5px;">
+            🕒 {target_status_col} 필터
+        </div>
+        """
+
+  st.markdown(header_html, unsafe_allow_html=True)
+
+  status_list = [f"전체 {target_status_col}"]
   if target_status_col in df.columns:
     raw_status = df[target_status_col].dropna().astype(str).tolist()
     cleaned_status = []
@@ -536,30 +553,33 @@ with col_f2:
       if s_str not in ["nan", "None", ""] and s_str not in cleaned_status:
         cleaned_status.append(s_str)
 
-    status_order = [
-        "굉장한 활약",
-        "굉장한활약",
-        "매우 활약",
-        "매우활약",
-        "활약",
-        "활약 저조",
-        "활약저조",
-        "미활약",
-        "활약 매우 저조",
-        "활약매우저조",
-    ]
-    sorted_status = []
-
-    for s in status_order:
-      if s in cleaned_status:
-        sorted_status.append(s)
-        cleaned_status.remove(s)
-
-    sorted_status.extend(sorted(cleaned_status))
-    status_list.extend(sorted_status)
+    # 활약도 관련 컬럼인 경우에만 우선순위 정렬 적용, 그 외(접속가능시간 등)는 입력된 값 순서대로 자동 채움
+    if is_activity:
+      status_order = [
+          "굉장한 활약",
+          "굉장한활약",
+          "매우 활약",
+          "매우활약",
+          "활약",
+          "활약 저조",
+          "활약저조",
+          "미활약",
+          "활약 매우 저조",
+          "활약매우저조",
+      ]
+      sorted_status = []
+      for s in status_order:
+        if s in cleaned_status:
+          sorted_status.append(s)
+          cleaned_status.remove(s)
+      sorted_status.extend(sorted(cleaned_status))
+      status_list.extend(sorted_status)
+    else:
+      # 접속가능시간 등의 경우 엑셀에 적힌 내용대로 자동 채움
+      status_list.extend(cleaned_status)
 
   selected_status = st.radio(
-      "활약도 선택",
+      "상태 선택",
       status_list,
       horizontal=True,
       label_visibility="collapsed",
@@ -568,7 +588,7 @@ with col_f2:
 
 st.markdown("---")
 
-# --- 7. 최종 필터 적용 (군단 + 배치지역 + 활약도) ---
+# --- 7. 최종 필터 적용 ---
 if selected_corps != "전체" and COL_CORPS in filtered_df.columns:
   filtered_df = filtered_df[
       filtered_df[COL_CORPS].astype(str).str.strip()
@@ -585,7 +605,10 @@ if (
       == str(selected_location).strip()
   ]
 
-if selected_status != "전체 활약" and target_status_col in filtered_df.columns:
+if (
+    selected_status != f"전체 {target_status_col}"
+    and target_status_col in filtered_df.columns
+):
   filtered_df = filtered_df[
       filtered_df[target_status_col].astype(str).str.strip()
       == str(selected_status).strip()
