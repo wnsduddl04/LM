@@ -453,7 +453,7 @@ if search_query and search_query.strip():
   st.markdown("<br>", unsafe_allow_html=True)
 
 
-# --- 6. 정렬 및 필터 UI (군단, 배치지역, 활약도/접속시간, 전투력 필터) ---
+# --- 6. 정렬 및 필터 UI (군단, 배치지역, 상태/접속시간, 전투력 필터) ---
 st.markdown(
     "<h3 style='color: #ffd700; margin-top: 10px; font-size: 1.3rem;"
     " text-shadow: 2px 2px 4px rgba(0,0,0,0.8);'>⚔️ 연맹원 정렬 및 필터</h3>",
@@ -620,10 +620,18 @@ with pow_col1:
   )
 
 with pow_col2:
-  # 순위 구간 버튼 선택 (1~60위, 61~120위 등)
+  # 순위 구간 버튼 선택 (181~240위, 241~300위 구간 추가)
   rank_range_option = st.radio(
       "투력 순위 구간 선택",
-      ["전체 순위", "1~60위", "61~120위", "121~180위", "181위 이상"],
+      [
+          "전체 순위",
+          "1~60위",
+          "61~120위",
+          "121~180위",
+          "181~240위",
+          "241~300위",
+          "301위 이상",
+      ],
       horizontal=True,
   )
 
@@ -678,27 +686,35 @@ if rank_range_option != "전체순위" and rank_range_option != "전체 순위":
     start_r, end_r = 61, 120
   elif rank_range_option == "121~180위":
     start_r, end_r = 121, 180
-  elif rank_range_option == "181위 이상":
-    start_r, end_r = 181, 999999
+  elif rank_range_option == "181~240위":
+    start_r, end_r = 181, 240
+  elif rank_range_option == "241~300위":
+    start_r, end_r = 241, 300
+  elif rank_range_option == "301위 이상":
+    start_r, end_r = 301, 999999
 
   if only_this_range:
     # 체크 시: 정확히 해당 구간만
-    if rank_range_option == "181위 이상":
-      filtered_df = filtered_df[filtered_df["_rank"] >= 181]
+    if rank_range_option == "301위 이상":
+      filtered_df = filtered_df[filtered_df["_rank"] >= 301]
     else:
       filtered_df = filtered_df[
           (filtered_df["_rank"] >= start_r) & (filtered_df["_rank"] <= end_r)
       ]
   else:
-    # 체크 해제 시: 해당 구간 이상 모두 보기 (예: 61~120위 선택 시 120위 이하의 더 높은 투력 유저들까지 모두 포함)
+    # 체크 해제 시: 해당 구간 이상 모두 보기 (상위 유저들 포함)
     if rank_range_option == "1~60위":
       filtered_df = filtered_df[filtered_df["_rank"] <= 60]
     elif rank_range_option == "61~120위":
       filtered_df = filtered_df[filtered_df["_rank"] <= 120]
     elif rank_range_option == "121~180위":
       filtered_df = filtered_df[filtered_df["_rank"] <= 180]
-    elif rank_range_option == "181위 이상":
-      filtered_df = filtered_df[filtered_df["_rank"] >= 181]
+    elif rank_range_option == "181~240위":
+      filtered_df = filtered_df[filtered_df["_rank"] <= 240]
+    elif rank_range_option == "241~300위":
+      filtered_df = filtered_df[filtered_df["_rank"] <= 300]
+    elif rank_range_option == "301위 이상":
+      filtered_df = filtered_df[filtered_df["_rank"] >= 301]
 
 
 # --- 8. 특정 군단 선택 시 요약 카드 ---
