@@ -620,7 +620,7 @@ with pow_col1:
   )
 
 with pow_col2:
-  # 순위 구간 버튼 선택 (301위 이상 제거)
+  # 순위 구간 버튼 선택
   rank_range_option = st.radio(
       "투력 순위 구간 선택",
       ["전체 순위", "1~60위", "61~120위", "121~180위", "181~240위", "241~300위"],
@@ -631,6 +631,39 @@ with pow_col2:
   only_this_range = st.checkbox(
       "선택한 순위 구간만 보기 (체크 해제 시 이상 모두 보기)", value=False
   )
+
+# --- 💡 선택한 순위 구간의 최소 전투력(M) 계산 및 실시간 안내 ---
+if rank_range_option != "전체 순위" and not df.empty:
+  r_map = {
+      "1~60위": (1, min(60, len(df))),
+      "61~120위": (61, min(120, len(df))),
+      "121~180위": (121, min(180, len(df))),
+      "181~240위": (181, min(240, len(df))),
+      "241~300위": (241, min(300, len(df))),
+  }
+
+  s_idx, e_idx = r_map.get(rank_range_option, (1, len(df)))
+
+  if s_idx <= len(df):
+    # 해당 구간의 최하단 순위 유저의 전투력 추출 (인덱스는 0부터 시작하므로 end_idx - 1)
+    actual_end = min(e_idx, len(df))
+    min_row = df[df["_rank"] == actual_end]
+
+    if not min_row.empty:
+      min_p_val = min_row["_power_num"].values[0]
+      min_m_str = f"{min_p_val / 1_000_000:.2f}M"
+
+      mode_text = (
+          "정확히 해당 구간만"
+          if only_this_range
+          else "해당 순위 이상 전체 포함"
+      )
+      st.markdown(
+          f"<p style='color: #4fe3c1; font-size: 0.95rem; margin-top: -5px;"
+          f" margin-bottom: 10px; font-weight: bold;'>💡 안내: [{rank_range_option}]"
+          f" 기준 최소 전투력 <b>{min_m_str}</b> 이상 ({mode_text})</p>",
+          unsafe_allow_html=True,
+      )
 
 st.markdown("---")
 
@@ -671,7 +704,7 @@ if min_power_input and min_power_input.strip():
     st.warning("⚠️ 전투력 숫자를 올바르게 입력해주세요. (예: 3 또는 3.5)")
 
 # 2) 투력 순위 구간 버튼 및 체크박스 필터 적용
-if rank_range_option != "전체순위" and rank_range_option != "전체 순위":
+if rank_range_option != "전체 순위":
   if rank_range_option == "1~60위":
     start_r, end_r = 1, 60
   elif rank_range_option == "61~120위":
