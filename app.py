@@ -29,7 +29,7 @@ bg_style = (
     else "url('https://raw.githubusercontent.com/7aab/your-repo/main/assets/bg_palace.webp')"
 )
 
-# --- 🎨 삼국지 게임풍 테마 CSS (마우스 오버 툴팁 포함) ---
+# --- 🎨 삼국지 게임풍 테마 CSS ---
 st.markdown(
     f"""
 <style>
@@ -71,8 +71,8 @@ st.markdown(
     margin-bottom: 12px;
 }}
 
-/* 4. 라디오 버튼 내부 텍스트 크기 및 가독성 설정 */
-div[data-testid="stRadio"] label p {{
+/* 4. 라디오 버튼 및 체크박스 내부 텍스트 크기 설정 */
+div[data-testid="stRadio"] label p, div[data-testid="stCheckbox"] label p {{
     color: #ffffff !important;
     font-size: 1.15rem !important;
     font-weight: 800 !important;
@@ -101,7 +101,7 @@ button[data-testid="stPopoverButton"]:hover {{
     color: #ffffff !important;
 }}
 
-/* 6. 활약도/접속시간 필터 마우스 오버 툴팁 */
+/* 6. 툴팁 스타일 */
 .tooltip-container {{
     position: relative;
     display: inline-block;
@@ -289,23 +289,40 @@ def load_data():
 
 df, update_time = load_data()
 
-# 컬럼 정의 (G열은 엑셀의 7번째 열이므로, 엑셀 구조상 대개 인덱스 6번 혹은 '활약도', '접속가능시간' 등으로 동적 매핑)
+# 컬럼 정의
 COL_NAME = "이름"
 COL_CORPS = "군단명"
 COL_POWER = "전투력"
 COL_LEADER = "군단장"
-COL_LOCATION = "배치지역"  # D열 배치지역
+COL_LOCATION = "배치지역"
 
-# G열 컬럼명 동적 감지 (G열인 6번째 컬럼이 존재하면 그 이름을 사용, 없으면 '활약도' 기본값)
+# G열 컬럼명 동적 감지
 target_status_col = "활약도"
 if len(df.columns) > 6:
-  target_status_col = df.columns[6]  # 0부터 시작하므로 6번째가 G열
+  target_status_col = df.columns[6]
 elif "활약도" in df.columns:
   target_status_col = "활약도"
 elif "접속가능시간" in df.columns:
   target_status_col = "접속가능시간"
 
 total_count = len(df)
+
+# --- 전투력 숫자형 가공 컬럼 추가 (필터링용) ---
+if COL_POWER in df.columns:
+  df["_power_num"] = (
+      df[COL_POWER]
+      .astype(str)
+      .str.replace(",", "", regex=True)
+      .str.replace("만", "", regex=True)
+  )
+  df["_power_num"] = pd.to_numeric(df["_power_num"], errors="coerce").fillna(0)
+else:
+  df["_power_num"] = 0
+
+# 전투력 내림차순 정렬을 통한 순위 부여 (1위부터~)
+df = df.sort_values(by="_power_num", ascending=False).reset_index(drop=True)
+df["_rank"] = df.index + 1
+
 
 # --- 2. 상단 메인 헤더 영역 ---
 col_logo, col_text = st.columns([1, 4])
@@ -436,7 +453,7 @@ if search_query and search_query.strip():
   st.markdown("<br>", unsafe_allow_html=True)
 
 
-# --- 6. 군단, 배치지역 및 G열(동적 필터) 선택 UI ---
+# --- 6. 정렬 및 필터 UI (군단, 배치지역, 활약도/접속시간, 전투력 필터) ---
 st.markdown(
     "<h3 style='color: #ffd700; margin-top: 10px; font-size: 1.3rem;"
     " text-shadow: 2px 2px 4px rgba(0,0,0,0.8);'>⚔️ 연맹원 정렬 및 필터</h3>",
@@ -481,7 +498,7 @@ with col_f1:
       key="corps_radio",
   )
 
-  # D열(배치지역) 내용이 있을 때만 동적 생성
+  # 배치지역 필터 (데이터가 있을 때만)
   has_location_data = False
   location_list = ["전체 지역"]
   if COL_LOCATION in df.columns:
@@ -517,7 +534,6 @@ with col_f1:
     )
 
 with col_f2:
-  # G열 항목명에 맞춰 동적으로 필터 메뉴 생성 (예: 접속가능시간, 활약도 등)
   is_activity = "활약" in target_status_col
 
   if is_activity:
@@ -553,7 +569,6 @@ with col_f2:
       if s_str not in ["nan", "None", ""] and s_str not in cleaned_status:
         cleaned_status.append(s_str)
 
-    # 활약도 관련 컬럼인 경우에만 우선순위 정렬 적용, 그 외(접속가능시간 등)는 입력된 값 순서대로 자동 채움
     if is_activity:
       status_order = [
           "굉장한 활약",
@@ -575,7 +590,6 @@ with col_f2:
       sorted_status.extend(sorted(cleaned_status))
       status_list.extend(sorted_status)
     else:
-      # 접속가능시간 등의 경우 엑셀에 적힌 내용대로 자동 채움
       status_list.extend(cleaned_status)
 
   selected_status = st.radio(
@@ -588,7 +602,40 @@ with col_f2:
 
 st.markdown("---")
 
-# --- 7. 최종 필터 적용 ---
+# --- ⚔️ 추가된 전투력 필터 섹션 ---
+st.markdown(
+    "<p style='color:#ffd700; font-size:1.15rem; font-weight:800;"
+    " margin-bottom:8px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);'>⚔️ 전투력"
+    " 맞춤 필터</p>",
+    unsafe_allow_html=True,
+)
+
+pow_col1, pow_col2 = st.columns([1, 1])
+
+with pow_col1:
+  # 직접 입력 (M 단위, 예: 3 입력 시 3M 이상)
+  min_power_input = st.text_input(
+      "최소 전투력 직접 입력 (M 단위, 예: 3 입력 시 3M 이상)",
+      placeholder="예: 3 (3M 이상)",
+  )
+
+with pow_col2:
+  # 순위 구간 버튼 선택 (1~60위, 61~120위 등)
+  rank_range_option = st.radio(
+      "투력 순위 구간 선택",
+      ["전체 순위", "1~60위", "61~120위", "121~180위", "181위 이상"],
+      horizontal=True,
+  )
+
+  # 해당 구간만 볼지, 이상으로 모두 볼지 결정하는 체크박스
+  only_this_range = st.checkbox(
+      "선택한 순위 구간만 보기 (체크 해제 시 이상 모두 보기)", value=False
+  )
+
+st.markdown("---")
+
+
+# --- 7. 최종 필터 적용 (군단 + 배치지역 + 상태 + 전투력) ---
 if selected_corps != "전체" and COL_CORPS in filtered_df.columns:
   filtered_df = filtered_df[
       filtered_df[COL_CORPS].astype(str).str.strip()
@@ -613,6 +660,45 @@ if (
       filtered_df[target_status_col].astype(str).str.strip()
       == str(selected_status).strip()
   ]
+
+# 1) 직접 입력 전투력 필터 적용 (M 단위 변환: 3 입력 시 3,000,000 이상)
+if min_power_input and min_power_input.strip():
+  try:
+    val_m = float(min_power_input.strip())
+    target_val = val_m * 1_000_000
+    filtered_df = filtered_df[filtered_df["_power_num"] >= target_val]
+  except ValueError:
+    st.warning("⚠️ 전투력 숫자를 올바르게 입력해주세요. (예: 3 또는 3.5)")
+
+# 2) 투력 순위 구간 버튼 및 체크박스 필터 적용
+if rank_range_option != "전체순위" and rank_range_option != "전체 순위":
+  if rank_range_option == "1~60위":
+    start_r, end_r = 1, 60
+  elif rank_range_option == "61~120위":
+    start_r, end_r = 61, 120
+  elif rank_range_option == "121~180위":
+    start_r, end_r = 121, 180
+  elif rank_range_option == "181위 이상":
+    start_r, end_r = 181, 999999
+
+  if only_this_range:
+    # 체크 시: 정확히 해당 구간만
+    if rank_range_option == "181위 이상":
+      filtered_df = filtered_df[filtered_df["_rank"] >= 181]
+    else:
+      filtered_df = filtered_df[
+          (filtered_df["_rank"] >= start_r) & (filtered_df["_rank"] <= end_r)
+      ]
+  else:
+    # 체크 해제 시: 해당 구간 이상 모두 보기 (예: 61~120위 선택 시 120위 이하의 더 높은 투력 유저들까지 모두 포함)
+    if rank_range_option == "1~60위":
+      filtered_df = filtered_df[filtered_df["_rank"] <= 60]
+    elif rank_range_option == "61~120위":
+      filtered_df = filtered_df[filtered_df["_rank"] <= 120]
+    elif rank_range_option == "121~180위":
+      filtered_df = filtered_df[filtered_df["_rank"] <= 180]
+    elif rank_range_option == "181위 이상":
+      filtered_df = filtered_df[filtered_df["_rank"] >= 181]
 
 
 # --- 8. 특정 군단 선택 시 요약 카드 ---
@@ -655,13 +741,7 @@ if selected_corps != "전체":
   with card_col2:
     total_power_str = "0"
     if COL_POWER in df.columns:
-      power_series = pd.to_numeric(
-          corps_all_df[COL_POWER]
-          .astype(str)
-          .str.replace(",", "")
-          .str.replace("만", ""),
-          errors="coerce",
-      ).fillna(0)
+      power_series = corps_all_df["_power_num"].fillna(0)
       total_power = power_series.sum()
       total_power_str = f"{int(total_power):,}"
 
@@ -678,8 +758,12 @@ if selected_corps != "전체":
   st.markdown("<br>", unsafe_allow_html=True)
 
 
-# --- 9. 결과 표 출력 ---
-displayed_count = len(filtered_df)
+# --- 9. 결과 표 출력 (내부 필터링용 임시 컬럼은 화면에서 숨김) ---
+display_table_df = filtered_df.drop(
+    columns=[c for c in ["_power_num", "_rank"] if c in filtered_df.columns]
+)
+
+displayed_count = len(display_table_df)
 search_msg = (
     f" (검색어: '{search_query}')"
     if (search_query and search_query.strip())
@@ -694,4 +778,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+st.dataframe(display_table_df, use_container_width=True, hide_index=True)
